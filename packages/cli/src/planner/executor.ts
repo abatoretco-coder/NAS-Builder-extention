@@ -20,7 +20,7 @@ const REDACTED_VALUE = '[REDACTED]';
 const SENSITIVE_KEY_PATTERN = /(token|secret|password|api[-_]?key|access[-_]?key|private[-_]?key|authorization|cookie|session|client[-_]?secret)/i;
 const BEARER_PATTERN = /(Bearer\s+)[A-Za-z0-9\-._~+/]+=*/gi;
 const BASIC_PATTERN = /(Basic\s+)[A-Za-z0-9+/=]+/gi;
-const KV_PATTERN = /((?:token|secret|password|api[-_]?key|authorization|cookie|client[-_]?secret)\s*[=:]\s*)([^\s,;]+)/gi;
+const KV_PATTERN = /((?:token|secret|password|api[-_]?key|authorization|cookie|client[-_]?secret)\s*[=:]\s*)([^\s,;"'&}]+)/gi;
 
 export async function executePlan(
   plan: Plan,
@@ -78,10 +78,12 @@ export async function executePlan(
       });
     } catch (error) {
       const finishedAt = new Date().toISOString();
-      const shortMsg = error instanceof Error ? error.message : String(error);
-      const message = error instanceof Error && error.stack
+      const shortMsgRaw = error instanceof Error ? error.message : String(error);
+      const messageRaw = error instanceof Error && error.stack
         ? `${error.message}\n${error.stack}`.trim()
-        : shortMsg;
+        : shortMsgRaw;
+      const shortMsg = sanitizeActionOutput(shortMsgRaw);
+      const message = sanitizeActionOutput(messageRaw);
       logger.error(`✗ ${action.kind}: ${shortMsg}`);
       results.push({
         action,
@@ -1279,7 +1281,7 @@ async function rollbackExecutedActions(
     logger.warn(`↩ rollback ${rollbackAction.kind}: ${rollbackAction.reason}`);
 
     try {
-      const output = await executeAction(rollbackAction, deps);
+      const output = sanitizeActionOutput(await executeAction(rollbackAction, deps));
       const finishedAt = new Date().toISOString();
       rollbackResults.push({
         action: rollbackAction,
@@ -1292,10 +1294,12 @@ async function rollbackExecutedActions(
     } catch (error) {
       rollbackOk = false;
       const finishedAt = new Date().toISOString();
-      const shortMsg = error instanceof Error ? error.message : String(error);
-      const message = error instanceof Error && error.stack
+      const shortMsgRaw = error instanceof Error ? error.message : String(error);
+      const messageRaw = error instanceof Error && error.stack
         ? `${error.message}\n${error.stack}`.trim()
-        : shortMsg;
+        : shortMsgRaw;
+      const shortMsg = sanitizeActionOutput(shortMsgRaw);
+      const message = sanitizeActionOutput(messageRaw);
       logger.error(`✗ rollback ${rollbackAction.kind}: ${shortMsg}`);
       rollbackResults.push({
         action: rollbackAction,

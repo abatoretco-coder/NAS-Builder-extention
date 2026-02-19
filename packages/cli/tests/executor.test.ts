@@ -1257,6 +1257,41 @@ describe('executePlan rollback', () => {
     expect(output).not.toContain('secret-value');
   });
 
+  it('redacts sensitive values from action failure messages and logs', async () => {
+    const { deps, grafanaRequest, loggerError } = depsWithSpies();
+    grafanaRequest.mockRejectedValueOnce(
+      new Error('request failed token=abc123 Authorization=Bearer super-secret-token password=hunter2')
+    );
+
+    const plan: Plan = {
+      generatedAt: new Date().toISOString(),
+      env: 'preprod',
+      actions: [
+        {
+          kind: 'grafana.request',
+          method: 'read',
+          path: '/api/teams/1',
+          reason: 'force a sensitive failure'
+        }
+      ]
+    };
+
+    const result = await executePlan(plan, deps, { dryRun: false, yes: true });
+
+    expect(result.ok).toBe(false);
+    const message = result.results[0]?.message ?? '';
+    expect(message).toContain('[REDACTED]');
+    expect(message).not.toContain('abc123');
+    expect(message).not.toContain('super-secret-token');
+    expect(message).not.toContain('hunter2');
+
+    const serializedLoggerCalls = loggerError.mock.calls.map((call) => String(call[0])).join('\n');
+    expect(serializedLoggerCalls).toContain('[REDACTED]');
+    expect(serializedLoggerCalls).not.toContain('abc123');
+    expect(serializedLoggerCalls).not.toContain('super-secret-token');
+    expect(serializedLoggerCalls).not.toContain('hunter2');
+  });
+
   it('executes typed grafana folder and dashboard actions', async () => {
     const { deps, upsertFolder, deleteFolder, upsertDashboard, deleteDashboard } = depsWithSpies();
 
