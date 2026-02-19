@@ -96,6 +96,10 @@ function depsWithSpies() {
   const nodeRequest = vi.fn(async () => ({}));
   const grafanaRequest = vi.fn(async () => ({}));
   const validateGrafana = vi.fn(async () => ({ ok: true, details: 'ok' }));
+  const upsertFolder = vi.fn(async () => ({}));
+  const deleteFolder = vi.fn(async () => ({}));
+  const upsertDashboard = vi.fn(async () => ({}));
+  const deleteDashboard = vi.fn(async () => ({}));
   const loggerInfo = vi.fn();
   const loggerWarn = vi.fn();
   const loggerError = vi.fn();
@@ -226,7 +230,11 @@ function depsWithSpies() {
     docker: docker as unknown as ExecutorDeps['docker'],
     grafana: {
       grafanaRequest,
-      validate: validateGrafana
+      validate: validateGrafana,
+      upsertFolder,
+      deleteFolder,
+      upsertDashboard,
+      deleteDashboard
     } as unknown as ExecutorDeps['grafana'],
     logger: {
       info: loggerInfo,
@@ -329,6 +337,10 @@ function depsWithSpies() {
     nodeRequest,
     grafanaRequest,
     validateGrafana,
+    upsertFolder,
+    deleteFolder,
+    upsertDashboard,
+    deleteDashboard,
     loggerInfo,
     loggerWarn,
     loggerError
@@ -1140,5 +1152,44 @@ describe('executePlan rollback', () => {
       headers: { 'X-Custom-Trace': 'naas' },
       orgId: 2
     });
+  });
+
+  it('executes typed grafana folder and dashboard actions', async () => {
+    const { deps, upsertFolder, deleteFolder, upsertDashboard, deleteDashboard } = depsWithSpies();
+
+    const plan: Plan = {
+      generatedAt: new Date().toISOString(),
+      env: 'preprod',
+      actions: [
+        {
+          kind: 'grafana.folder.upsert',
+          config: { uid: 'ops', title: 'Ops' },
+          reason: 'upsert folder'
+        },
+        {
+          kind: 'grafana.folder.delete',
+          uid: 'old-folder',
+          reason: 'delete folder'
+        },
+        {
+          kind: 'grafana.dashboard.upsert',
+          config: { uid: 'dash-ops', title: 'Ops Dashboard', dashboard: { title: 'Ops Dashboard' } },
+          reason: 'upsert dashboard'
+        },
+        {
+          kind: 'grafana.dashboard.delete',
+          uid: 'dash-old',
+          reason: 'delete dashboard'
+        }
+      ]
+    };
+
+    const result = await executePlan(plan, deps, { dryRun: false, yes: true });
+
+    expect(result.ok).toBe(true);
+    expect(upsertFolder).toHaveBeenCalledWith({ uid: 'ops', title: 'Ops' });
+    expect(deleteFolder).toHaveBeenCalledWith('old-folder');
+    expect(upsertDashboard).toHaveBeenCalledWith({ uid: 'dash-ops', title: 'Ops Dashboard', dashboard: { title: 'Ops Dashboard' } });
+    expect(deleteDashboard).toHaveBeenCalledWith('dash-old');
   });
 });

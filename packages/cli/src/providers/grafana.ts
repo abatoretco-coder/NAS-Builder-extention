@@ -1,6 +1,6 @@
 import https from 'node:https';
 import axios from 'axios';
-import type { GrafanaDashboard, GrafanaDatasource } from '@naas/shared';
+import type { GrafanaDashboard, GrafanaDashboardConfig, GrafanaDatasource, GrafanaFolderConfig } from '@naas/shared';
 import type { GrafanaAuth } from '../config/secrets.js';
 import {
   evaluateGrafanaCrudPolicy,
@@ -106,6 +106,43 @@ export class GrafanaProvider {
     });
 
     return response.data;
+  }
+
+  async upsertFolder(config: GrafanaFolderConfig): Promise<unknown> {
+    return this.grafanaRequest('post', '/api/folders', {
+      body: {
+        uid: config.uid,
+        title: config.title,
+        parentUid: config.parentUid
+      }
+    });
+  }
+
+  async deleteFolder(uid: string): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/folders/${encodeURIComponent(uid)}`, {
+      payload: { confirm: 'I_UNDERSTAND' }
+    });
+  }
+
+  async upsertDashboard(config: GrafanaDashboardConfig): Promise<unknown> {
+    const dashboardPayload = {
+      ...(config.dashboard ?? {}),
+      uid: config.uid,
+      ...(config.title ? { title: config.title } : {})
+    };
+
+    return this.grafanaRequest('post', '/api/dashboards/db', {
+      body: {
+        dashboard: dashboardPayload,
+        folderUid: config.folderUid,
+        overwrite: config.overwrite ?? true,
+        message: config.message
+      }
+    });
+  }
+
+  async deleteDashboard(uid: string): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/dashboards/uid/${encodeURIComponent(uid)}`);
   }
 }
 

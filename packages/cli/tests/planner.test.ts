@@ -126,6 +126,36 @@ describe('buildPlan', () => {
     );
   });
 
+  it('adds typed grafana folder and dashboard actions', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      grafanaFolders: [
+        { uid: 'ops', title: 'Ops' },
+        { uid: 'old', title: 'Old', ensure: 'absent' }
+      ],
+      grafanaDashboards: [
+        { uid: 'dash-ops', title: 'Ops Dashboard', dashboard: { title: 'Ops Dashboard' } },
+        { uid: 'dash-old', ensure: 'absent' }
+      ]
+    };
+
+    const plan = buildPlan(current, desired);
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({ kind: 'grafana.folder.upsert' })
+    );
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({ kind: 'grafana.folder.delete', uid: 'old' })
+    );
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({ kind: 'grafana.dashboard.upsert' })
+    );
+    expect(plan.actions).toContainEqual(
+      expect.objectContaining({ kind: 'grafana.dashboard.delete', uid: 'dash-old' })
+    );
+  });
+
   it('adds vm provisioning action when vm does not exist', () => {
     const current = baseState();
     const desired: DesiredSpec = {

@@ -830,6 +830,30 @@ async function executeAction(action: PlanAction, deps: ExecutorDeps): Promise<st
       });
       return JSON.stringify(result ?? {});
     }
+    case 'grafana.folder.upsert':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.upsertFolder(action.config);
+      return '';
+    case 'grafana.folder.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteFolder(action.uid);
+      return '';
+    case 'grafana.dashboard.upsert':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.upsertDashboard(action.config);
+      return '';
+    case 'grafana.dashboard.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteDashboard(action.uid);
+      return '';
     case 'grafana.create':
       if (!deps.grafana) {
         throw new Error('Grafana provider not configured');

@@ -153,6 +153,23 @@ export interface GrafanaCrudConfig {
   reason?: string;
 }
 
+export interface GrafanaFolderConfig {
+  uid?: string;
+  title: string;
+  ensure?: 'present' | 'absent';
+  parentUid?: string;
+}
+
+export interface GrafanaDashboardConfig {
+  uid: string;
+  ensure?: 'present' | 'absent';
+  title?: string;
+  folderUid?: string;
+  overwrite?: boolean;
+  message?: string;
+  dashboard?: Record<string, unknown>;
+}
+
 export interface UnifiedState {
   generatedAt: string;
   env: EnvironmentName;
@@ -673,6 +690,8 @@ export interface DesiredSpec {
   vms: DesiredVmState[];
   composeProjects: DesiredComposeProject[];
   grafanaCrud?: GrafanaCrudConfig[];
+  grafanaFolders?: GrafanaFolderConfig[];
+  grafanaDashboards?: GrafanaDashboardConfig[];
   validation?: {
     enabled?: boolean;
     prometheusDatasourceName?: string;
@@ -1028,6 +1047,26 @@ export type PlanAction =
       body?: GrafanaRequestData;
       headers?: Record<string, string>;
       orgId?: number;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.folder.upsert';
+      config: GrafanaFolderConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.folder.delete';
+      uid: string;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.dashboard.upsert';
+      config: GrafanaDashboardConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.dashboard.delete';
+      uid: string;
       reason: string;
     }
   | {

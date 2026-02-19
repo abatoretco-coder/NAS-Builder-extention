@@ -176,6 +176,31 @@ describe('runPreflightChecks', () => {
     expect(report.ok).toBe(true);
   });
 
+  it('returns errors for duplicate typed grafana folders/dashboards and missing delete uid', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      grafanaFolders: [
+        { title: 'Ops', ensure: 'absent' },
+        { uid: 'ops', title: 'Ops' },
+        { uid: 'ops', title: 'Ops Duplicate UID' },
+        { uid: 'ops-2', title: 'Ops' }
+      ],
+      grafanaDashboards: [
+        { uid: 'dash-ops', title: 'Ops', dashboard: { title: 'Ops' } },
+        { uid: 'dash-ops', ensure: 'absent' }
+      ]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('grafanaFolders entries with ensure=absent require uid'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaFolders uid'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaFolders title'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaDashboards uid'))).toBe(true);
+  });
+
   it('returns error when high-risk generic CRUD misses explicit confirmation', () => {
     const current = baseState();
     const desired: DesiredSpec = {

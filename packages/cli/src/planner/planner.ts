@@ -869,6 +869,43 @@ function planExplicitDeletes(current: UnifiedState, desired: DesiredSpec): PlanA
 function planAppActions(desired: DesiredSpec): PlanAction[] {
   const actions: PlanAction[] = [];
 
+  for (const folder of desired.grafanaFolders ?? []) {
+    if (folder.ensure === 'absent') {
+      if (!folder.uid) {
+        continue;
+      }
+      actions.push({
+        kind: 'grafana.folder.delete',
+        uid: folder.uid,
+        reason: `Ensure Grafana folder ${folder.uid} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.folder.upsert',
+      config: folder,
+      reason: `Ensure Grafana folder ${folder.title} is present and up to date`
+    });
+  }
+
+  for (const dashboard of desired.grafanaDashboards ?? []) {
+    if (dashboard.ensure === 'absent') {
+      actions.push({
+        kind: 'grafana.dashboard.delete',
+        uid: dashboard.uid,
+        reason: `Ensure Grafana dashboard ${dashboard.uid} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.dashboard.upsert',
+      config: dashboard,
+      reason: `Ensure Grafana dashboard ${dashboard.uid} is present and up to date`
+    });
+  }
+
   for (const operation of desired.grafanaCrud ?? []) {
     const isLegacyCrudMethod =
       operation.method === 'create' ||

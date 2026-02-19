@@ -155,6 +155,35 @@ export function runPreflightChecks(current: UnifiedState, desired: DesiredSpec, 
     }
   }
 
+  const seenGrafanaFolderUids = new Set<string>();
+  const seenGrafanaFolderTitles = new Set<string>();
+  for (const folder of desired.grafanaFolders ?? []) {
+    if (folder.ensure === 'absent' && !folder.uid) {
+      errors.push('grafanaFolders entries with ensure=absent require uid');
+    }
+
+    if (folder.uid) {
+      if (seenGrafanaFolderUids.has(folder.uid)) {
+        errors.push(`Duplicate grafanaFolders uid ${folder.uid}`);
+      }
+      seenGrafanaFolderUids.add(folder.uid);
+    }
+
+    const normalizedTitle = folder.title.trim().toLowerCase();
+    if (seenGrafanaFolderTitles.has(normalizedTitle)) {
+      errors.push(`Duplicate grafanaFolders title ${folder.title}`);
+    }
+    seenGrafanaFolderTitles.add(normalizedTitle);
+  }
+
+  const seenGrafanaDashboardUids = new Set<string>();
+  for (const dashboard of desired.grafanaDashboards ?? []) {
+    if (seenGrafanaDashboardUids.has(dashboard.uid)) {
+      errors.push(`Duplicate grafanaDashboards uid ${dashboard.uid}`);
+    }
+    seenGrafanaDashboardUids.add(dashboard.uid);
+  }
+
   for (const dns of desired.proxmoxNodeDns ?? []) {
     if (!nodeNames.has(dns.node)) {
       warnings.push(`Node DNS config targets unknown node ${dns.node} (not found in current scan)`);

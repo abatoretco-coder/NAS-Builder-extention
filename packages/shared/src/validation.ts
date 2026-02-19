@@ -741,6 +741,23 @@ const grafanaCrudSchema = z.object({
   reason: z.string().optional()
 });
 
+const grafanaFolderSchema = z.object({
+  uid: z.string().min(1).optional(),
+  title: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  parentUid: z.string().min(1).optional()
+});
+
+const grafanaDashboardSchema = z.object({
+  uid: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  title: z.string().min(1).optional(),
+  folderUid: z.string().min(1).optional(),
+  overwrite: z.boolean().optional(),
+  message: z.string().optional(),
+  dashboard: z.record(z.unknown()).optional()
+});
+
 // ============================================================================
 // Main desired spec schema
 // ============================================================================
@@ -766,6 +783,8 @@ export const desiredSpecSchema = z.object({
     )
     .default([]),
   grafanaCrud: z.array(grafanaCrudSchema).optional(),
+  grafanaFolders: z.array(grafanaFolderSchema).optional(),
+  grafanaDashboards: z.array(grafanaDashboardSchema).optional(),
   validation: z
     .object({
       enabled: z.boolean().optional(),

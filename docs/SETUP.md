@@ -471,6 +471,43 @@ Safety notes:
 - Some admin segments are blocked by policy (`/admin/provisioning`, `/admin/settings`).
 - High-risk write operations require explicit confirmation (`confirm: I_UNDERSTAND`).
 
+### 1.4.2 Grafana typed folders and dashboards
+
+For common dashboard lifecycle, prefer typed blocks over raw `grafanaCrud`:
+
+- `grafanaFolders`
+- `grafanaDashboards`
+
+Example:
+
+```yaml
+grafanaFolders:
+  - uid: ops
+    title: Ops
+
+  - uid: legacy
+    title: Legacy
+    ensure: absent
+
+grafanaDashboards:
+  - uid: ops-overview
+    title: Ops Overview
+    folderUid: ops
+    overwrite: true
+    dashboard:
+      title: Ops Overview
+      tags:
+        - naas
+
+  - uid: old-dashboard
+    ensure: absent
+```
+
+Preflight rules:
+- `grafanaFolders` with `ensure: absent` must provide `uid`.
+- folder UID/title duplicates are rejected.
+- dashboard UID duplicates are rejected.
+
 ---
 
 ## 2) Installation

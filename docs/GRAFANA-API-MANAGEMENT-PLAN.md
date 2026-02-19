@@ -14,12 +14,20 @@ Implemented baseline (CLI + shared):
   - deny segments (`/admin/provisioning`, `/admin/settings`)
   - high-risk write confirmation requirement (`payload.confirm` or `body.confirm` = `I_UNDERSTAND`)
 - Preflight policy enforcement for all `grafanaCrud` entries.
+- Typed folder lifecycle:
+  - `DesiredSpec.grafanaFolders[]`
+  - actions `grafana.folder.upsert` / `grafana.folder.delete`
+- Typed dashboard lifecycle:
+  - `DesiredSpec.grafanaDashboards[]`
+  - actions `grafana.dashboard.upsert` / `grafana.dashboard.delete`
 
 See also:
 - `docs/API-DOCUMENTATION-SNAPSHOT.md`
 - `docs/GRAFANA-API-COVERAGE-AUDIT.md`
 
 Remaining phases below still apply for typed domain-specific management (folders, dashboards, alerting, datasources, teams, service accounts).
+
+Note: Phase B (folders/dashboards) is now partially implemented via typed desired-spec + planner/preflight/executor/provider wiring on top of the universal API layer.
 
 ## New mandatory instructions (before any next Grafana phase)
 
