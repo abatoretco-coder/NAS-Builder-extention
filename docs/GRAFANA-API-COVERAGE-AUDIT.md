@@ -75,8 +75,7 @@ Grafana coverage is now implemented in three layers:
 
 ## Validation run
 
-- `pnpm --filter @naas/shared build`
-- `pnpm --filter @naas/cli build`
-- `pnpm --filter @naas/cli test`
+- `pnpm build`
+- `pnpm test`
 
-All commands pass after Wave 3 (`81` tests passing in CLI suite).
+All commands pass on final audit pass (`86` tests passing in CLI suite, `2` tests passing in VS Code extension suite).
