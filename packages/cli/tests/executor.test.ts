@@ -1220,6 +1220,43 @@ describe('executePlan rollback', () => {
     });
   });
 
+  it('redacts sensitive fields from grafana action output', async () => {
+    const { deps, grafanaRequest } = depsWithSpies();
+    grafanaRequest.mockResolvedValueOnce({
+      token: 'abc123',
+      apiKey: 'key-123',
+      headers: {
+        Authorization: 'Bearer super-secret-token'
+      },
+      nested: {
+        clientSecret: 'secret-value'
+      }
+    });
+
+    const plan: Plan = {
+      generatedAt: new Date().toISOString(),
+      env: 'preprod',
+      actions: [
+        {
+          kind: 'grafana.request',
+          method: 'read',
+          path: '/api/teams/1',
+          reason: 'read team with sensitive payload'
+        }
+      ]
+    };
+
+    const result = await executePlan(plan, deps, { dryRun: false, yes: true });
+
+    expect(result.ok).toBe(true);
+    const output = result.results[0]?.output ?? '';
+    expect(output).toContain('[REDACTED]');
+    expect(output).not.toContain('abc123');
+    expect(output).not.toContain('key-123');
+    expect(output).not.toContain('super-secret-token');
+    expect(output).not.toContain('secret-value');
+  });
+
   it('executes typed grafana folder and dashboard actions', async () => {
     const { deps, upsertFolder, deleteFolder, upsertDashboard, deleteDashboard } = depsWithSpies();
 

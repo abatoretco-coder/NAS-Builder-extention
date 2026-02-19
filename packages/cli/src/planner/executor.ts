@@ -16,6 +16,12 @@ export interface ExecuteOptions {
   yes: boolean;
 }
 
+const REDACTED_VALUE = '[REDACTED]';
+const SENSITIVE_KEY_PATTERN = /(token|secret|password|api[-_]?key|access[-_]?key|private[-_]?key|authorization|cookie|session|client[-_]?secret)/i;
+const BEARER_PATTERN = /(Bearer\s+)[A-Za-z0-9\-._~+/]+=*/gi;
+const BASIC_PATTERN = /(Basic\s+)[A-Za-z0-9+/=]+/gi;
+const KV_PATTERN = /((?:token|secret|password|api[-_]?key|authorization|cookie|client[-_]?secret)\s*[=:]\s*)([^\s,;]+)/gi;
+
 export async function executePlan(
   plan: Plan,
   deps: ExecutorDeps,
@@ -58,7 +64,7 @@ export async function executePlan(
     }
 
     try {
-      const output = await executeAction(action, deps);
+      const output = sanitizeActionOutput(await executeAction(action, deps));
 
       const finishedAt = new Date().toISOString();
       logger.info(`✓ ${action.kind}`);
@@ -98,6 +104,59 @@ export async function executePlan(
     results,
     rollback
   };
+}
+
+function sanitizeActionOutput(output: string): string {
+  if (!output) {
+    return output;
+  }
+
+  try {
+    const parsed = JSON.parse(output) as unknown;
+    const redacted = redactSensitiveData(parsed);
+    return JSON.stringify(redacted);
+  } catch {
+    return output
+      .replace(BEARER_PATTERN, `$1${REDACTED_VALUE}`)
+      .replace(BASIC_PATTERN, `$1${REDACTED_VALUE}`)
+      .replace(KV_PATTERN, `$1${REDACTED_VALUE}`);
+  }
+}
+
+function redactSensitiveData(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .replace(BEARER_PATTERN, `$1${REDACTED_VALUE}`)
+      .replace(BASIC_PATTERN, `$1${REDACTED_VALUE}`);
+  }
+
+  if (typeof value !== 'object') {
+    return value;
+  }
+
+  if (seen.has(value as object)) {
+    return value;
+  }
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSensitiveData(item, seen));
+  }
+
+  const source = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(source)) {
+    if (SENSITIVE_KEY_PATTERN.test(key)) {
+      result[key] = REDACTED_VALUE;
+      continue;
+    }
+    result[key] = redactSensitiveData(item, seen);
+  }
+  return result;
 }
 
 async function executeAction(action: PlanAction, deps: ExecutorDeps): Promise<string> {
