@@ -1,0 +1,18 @@
+proxmox:
+  endpoint: ${PROXMOX_ENDPOINT:-https://192.168.1.50:8006}
+  insecure: true
+  tokenIdEnv: PROXMOX_TOKEN_ID
+  tokenSecretEnv: PROXMOX_TOKEN_SECRET
+  usernameEnv: PROXMOX_USERNAME
+  passwordEnv: PROXMOX_PASSWORD
+  realm: pam
+
+docker:
+  host: ${DOCKER_HOST}
+
+grafana:
+  endpoint: ${GRAFANA_ENDPOINT:-https://grafana-preprod.local}
+  tokenEnv: GRAFANA_TOKEN
+  insecure: true
+
+desiredSpecPath: specs/nas.desired.yaml

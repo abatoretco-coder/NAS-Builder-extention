@@ -1,0 +1,11 @@
+vms:
+  - vmid: 101
+    desiredPower: running
+  - vmid: 102
+    desiredPower: stopped
+    risky: true
+composeProjects:
+  - path: ./stacks/media
+    ensure: running
+validation:
+  enabled: true

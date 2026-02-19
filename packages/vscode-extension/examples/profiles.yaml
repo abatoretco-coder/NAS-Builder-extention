@@ -1,0 +1,21 @@
+defaultProfile: preprod
+profiles:
+  - name: preprod
+    proxmox:
+      endpoint: https://proxmox-preprod.local:8006
+      authRef: proxmox-preprod
+    docker:
+      host: unix:///var/run/docker.sock
+    grafana:
+      endpoint: https://grafana-preprod.local
+      authRef: grafana-preprod
+
+  - name: prod
+    proxmox:
+      endpoint: https://proxmox-prod.local:8006
+      authRef: proxmox-prod
+    docker:
+      host: tcp://10.0.0.12:2375
+    grafana:
+      endpoint: https://grafana-prod.local
+      authRef: grafana-prod

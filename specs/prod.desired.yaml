@@ -1,0 +1,8 @@
+vms:
+  - vmid: 201
+    desiredPower: running
+composeProjects:
+  - path: ./stacks/core
+    ensure: running
+validation:
+  enabled: true

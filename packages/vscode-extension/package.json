@@ -1,0 +1,139 @@
+{
+  "name": "naas-toolkit",
+  "displayName": "NAAS Toolkit",
+  "description": "Standalone NAS infrastructure toolkit for VS Code",
+  "version": "0.1.0",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "naas",
+          "title": "NAAS",
+          "icon": "resources/naas.svg"
+        }
+      ]
+    },
+    "views": {
+      "naas": [
+        {
+          "id": "naas.infrastructureView",
+          "name": "Infrastructure",
+          "icon": "resources/naas.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "naas.selectProfile",
+        "title": "NAAS: Select Profile"
+      },
+      {
+        "command": "naas.addOrUpdateCredentials",
+        "title": "NAAS: Add/Update Credentials"
+      },
+      {
+        "command": "naas.setupProxmoxNasParameters",
+        "title": "NAAS: Setup Proxmox/NAS Parameters"
+      },
+      {
+        "command": "naas.deleteCredentials",
+        "title": "NAAS: Delete Credentials"
+      },
+      {
+        "command": "naas.scanInfrastructure",
+        "title": "NAAS: Scan Infrastructure"
+      },
+      {
+        "command": "naas.showPlan",
+        "title": "NAAS: Show Plan"
+      },
+      {
+        "command": "naas.applyPlan",
+        "title": "NAAS: Apply Plan"
+      },
+      {
+        "command": "naas.validate",
+        "title": "NAAS: Validate (Grafana/Prometheus)"
+      },
+      {
+        "command": "naas.openLogs",
+        "title": "NAAS: Open Logs"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "naas.scanInfrastructure",
+          "when": "view == naas.infrastructureView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "naas.showPlan",
+          "when": "view == naas.infrastructureView",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "NAAS Toolkit",
+      "properties": {
+        "naas.activeProfile": {
+          "type": "string",
+          "default": "",
+          "description": "Active profile name. Can be set globally or per-workspace/per-folder."
+        },
+        "naas.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional path to naasctl executable. If empty, extension checks bundled CLI then PATH."
+        },
+        "naas.cliTimeoutMs": {
+          "type": "number",
+          "default": 120000,
+          "minimum": 5000,
+          "description": "Timeout in milliseconds for naasctl commands."
+        },
+        "naas.workspaceFolder": {
+          "type": "string",
+          "default": "",
+          "description": "Multi-root folder name to use for workspace-specific overrides. If empty, first workspace folder is used."
+        },
+        "naas.profilesPath": {
+          "type": "string",
+          "default": "~/.naas/profiles.yaml",
+          "description": "Path to global NAAS profiles YAML file."
+        },
+        "naas.profileOverrides": {
+          "type": "object",
+          "default": {},
+          "description": "Optional profile override map keyed by profile name, usually in workspace settings."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "execa": "^9.5.2",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/vscode": "^1.96.0",
+    "@vscode/vsce": "^3.2.2",
+    "vitest": "^3.0.8"
+  }
+}

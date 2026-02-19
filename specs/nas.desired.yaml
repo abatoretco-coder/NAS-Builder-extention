@@ -1,0 +1,86 @@
+# NAS-oriented desired state for current Proxmox environment
+# Based on detected values:
+# - node: proxmox
+# - bridge: vmbr0 (ports/slaves: nic0)
+# - storage: local-lvm
+#
+# This version is intentionally safe:
+# - no network creation/update
+# - no storage creation/update
+# It only provisions VM/CT on existing infra.
+
+vmProvision:
+  - name: nas-core
+    vmid: 510
+    node: proxmox
+    ensure: running
+    cpu:
+      cores: 4
+      sockets: 1
+      type: host
+    memory:
+      size: 8192
+      balloon: 4096
+    disks:
+      - interface: scsi
+        index: 0
+        storage: local-lvm
+        size: 80G
+        format: qcow2
+      - interface: scsi
+        index: 1
+        storage: local-lvm
+        size: 200G
+        format: qcow2
+    networks:
+      - interface: net
+        index: 0
+        model: virtio
+        bridge: vmbr0
+    cloudInit:
+      user: admin
+      sshKeys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEWfNll+L8amAzEgLlrXzPMMb77hK3UF1uCPUk2V7pjM naas-nas
+      nameserver: 192.168.10.1
+      searchdomain: lan
+    boot:
+      bios: ovmf
+      order: [scsi0]
+    onboot: true
+    protection: true
+    tags: [nas, core]
+    description: NAS core VM managed by NAAS
+
+containerProvision:
+  - name: nas-monitor
+    vmid: 610
+    node: proxmox
+    ensure: running
+    ostemplate: local:vztmpl/debian-12-standard_12.0-1_amd64.tar.zst
+    cpu:
+      cores: 2
+    memory:
+      size: 2048
+      swap: 1024
+    rootfs:
+      storage: local-lvm
+      size: 12G
+    networks:
+      - index: 0
+        bridge: vmbr0
+        ip: dhcp
+    onboot: true
+    tags: [nas, monitor]
+    hostname: nas-monitor
+    unprivileged: true
+
+# Desired runtime state for known VM/CT IDs.
+vms:
+  - vmid: 510
+    desiredPower: running
+  - vmid: 610
+    desiredPower: running
+
+# Optional docker stack on same host (if used).
+validation:
+  enabled: false

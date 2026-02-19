@@ -1,0 +1,18 @@
+proxmox:
+  endpoint: ${PROXMOX_ENDPOINT:-https://proxmox-prod.local:8006}
+  insecure: false
+  tokenIdEnv: PROXMOX_TOKEN_ID
+  tokenSecretEnv: PROXMOX_TOKEN_SECRET
+  usernameEnv: PROXMOX_USERNAME
+  passwordEnv: PROXMOX_PASSWORD
+  realm: pam
+
+docker:
+  host: ${DOCKER_HOST}
+
+grafana:
+  endpoint: ${GRAFANA_ENDPOINT:-https://grafana-prod.local}
+  tokenEnv: GRAFANA_TOKEN
+  insecure: false
+
+desiredSpecPath: specs/prod.desired.yaml

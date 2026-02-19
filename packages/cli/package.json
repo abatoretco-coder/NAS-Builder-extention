@@ -1,0 +1,30 @@
+{
+  "name": "@naas/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "naasctl": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@naas/shared": "workspace:*",
+    "axios": "^1.8.4",
+    "commander": "^13.1.0",
+    "dockerode": "^4.0.5",
+    "dotenv": "^16.4.7",
+    "execa": "^9.5.2",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.38",
+    "@types/js-yaml": "^4.0.9",
+    "vitest": "^3.0.8"
+  }
+}
