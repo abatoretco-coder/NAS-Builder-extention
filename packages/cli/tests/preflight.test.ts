@@ -201,6 +201,44 @@ describe('runPreflightChecks', () => {
     expect(report.errors.some((error) => error.includes('Duplicate grafanaDashboards uid'))).toBe(true);
   });
 
+  it('returns Wave 2 typed grafana validation errors for missing ids, duplicates and missing confirms', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      grafanaAlertRuleGroups: [
+        { folderUid: 'ops', group: 'alerts' },
+        { folderUid: 'ops', group: 'alerts' }
+      ],
+      grafanaContactPoints: [{ name: 'cp-old', ensure: 'absent' }],
+      grafanaNotificationPolicies: [{ policyTree: { receiver: 'ops' } }],
+      grafanaDatasources: [{ name: 'Prom', type: 'prometheus', ensure: 'absent' }],
+      grafanaTeams: [{ name: 'old-team', ensure: 'absent' }],
+      grafanaTeamMemberships: [
+        { teamId: 1, userIds: [2], mode: 'replace' },
+        { teamId: 1, userIds: [3], mode: 'add' }
+      ],
+      grafanaServiceAccounts: [{ name: 'old-sa', ensure: 'absent' }],
+      grafanaServiceAccountTokens: [
+        { serviceAccountId: 10, name: 'tok-a', ensure: 'absent' },
+        { serviceAccountId: 10, name: 'tok-a' }
+      ]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaAlertRuleGroups'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('grafanaContactPoints entries with ensure=absent require uid'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('grafanaNotificationPolicies replacement requires confirm=I_UNDERSTAND'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('grafanaDatasources entries with ensure=absent require uid'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('grafanaTeams entries with ensure=absent require id'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('grafanaTeamMemberships replace mode requires confirm=I_UNDERSTAND'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaTeamMemberships teamId'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('grafanaServiceAccounts entries with ensure=absent require id'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('grafanaServiceAccountTokens ensure=absent requires tokenId'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaServiceAccountTokens entry'))).toBe(true);
+  });
+
   it('returns error when high-risk generic CRUD misses explicit confirmation', () => {
     const current = baseState();
     const desired: DesiredSpec = {

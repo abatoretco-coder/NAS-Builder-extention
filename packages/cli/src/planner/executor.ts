@@ -854,6 +854,90 @@ async function executeAction(action: PlanAction, deps: ExecutorDeps): Promise<st
       }
       await deps.grafana.deleteDashboard(action.uid);
       return '';
+    case 'grafana.alert-rule-group.upsert':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.upsertAlertRuleGroup(action.config);
+      return '';
+    case 'grafana.alert-rule-group.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteAlertRuleGroup(action.folderUid, action.group);
+      return '';
+    case 'grafana.contact-point.upsert':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.upsertContactPoint(action.config);
+      return '';
+    case 'grafana.contact-point.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteContactPoint(action.uid);
+      return '';
+    case 'grafana.notification-policy.replace':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.replaceNotificationPolicy(action.config);
+      return '';
+    case 'grafana.datasource.upsert':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.upsertDatasource(action.config);
+      return '';
+    case 'grafana.datasource.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteDatasource(action.uid);
+      return '';
+    case 'grafana.team.upsert':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.upsertTeam(action.config);
+      return '';
+    case 'grafana.team.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteTeam(action.id);
+      return '';
+    case 'grafana.team-membership.sync':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.syncTeamMembership(action.config);
+      return '';
+    case 'grafana.service-account.upsert':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.upsertServiceAccount(action.config);
+      return '';
+    case 'grafana.service-account.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteServiceAccount(action.id);
+      return '';
+    case 'grafana.service-account-token.create':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.createServiceAccountToken(action.config);
+      return '';
+    case 'grafana.service-account-token.delete':
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      await deps.grafana.deleteServiceAccountToken(action.serviceAccountId, action.tokenId);
+      return '';
     case 'grafana.create':
       if (!deps.grafana) {
         throw new Error('Grafana provider not configured');

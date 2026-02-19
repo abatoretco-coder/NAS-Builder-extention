@@ -508,6 +508,71 @@ Preflight rules:
 - folder UID/title duplicates are rejected.
 - dashboard UID duplicates are rejected.
 
+### 1.4.3 Grafana typed alerting, datasources, teams and service accounts
+
+Additional typed blocks supported:
+
+- `grafanaAlertRuleGroups`
+- `grafanaContactPoints`
+- `grafanaNotificationPolicies`
+- `grafanaDatasources`
+- `grafanaTeams`
+- `grafanaTeamMemberships`
+- `grafanaServiceAccounts`
+- `grafanaServiceAccountTokens`
+
+Example:
+
+```yaml
+grafanaAlertRuleGroups:
+  - folderUid: ops
+    group: infra-alerts
+    intervalSeconds: 60
+    rules:
+      - title: CPU High
+
+grafanaContactPoints:
+  - uid: cp-email
+    name: email-main
+    type: email
+    settings:
+      addresses: sre@example.com
+
+grafanaNotificationPolicies:
+  - policyTree:
+      receiver: email-main
+    confirm: I_UNDERSTAND
+
+grafanaDatasources:
+  - uid: ds-prom
+    name: Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+
+grafanaTeams:
+  - name: sre
+
+grafanaTeamMemberships:
+  - teamId: 12
+    userIds: [101, 102]
+    mode: replace
+    confirm: I_UNDERSTAND
+
+grafanaServiceAccounts:
+  - name: naas-sa
+    role: Editor
+
+grafanaServiceAccountTokens:
+  - serviceAccountId: 33
+    name: naas-token
+    secondsToLive: 3600
+```
+
+Safety notes:
+- Notification policy replacement requires `confirm: I_UNDERSTAND`.
+- Team membership `mode: replace` requires `confirm: I_UNDERSTAND`.
+- Typed delete operations require their target identifiers (`uid`, `id`, `tokenId`) in desired spec.
+
 ---
 
 ## 2) Installation

@@ -184,6 +184,98 @@ export function runPreflightChecks(current: UnifiedState, desired: DesiredSpec, 
     seenGrafanaDashboardUids.add(dashboard.uid);
   }
 
+  const seenAlertRuleGroups = new Set<string>();
+  for (const alertGroup of desired.grafanaAlertRuleGroups ?? []) {
+    const key = `${alertGroup.folderUid}:${alertGroup.group}`;
+    if (seenAlertRuleGroups.has(key)) {
+      errors.push(`Duplicate grafanaAlertRuleGroups entry ${key}`);
+    }
+    seenAlertRuleGroups.add(key);
+  }
+
+  const seenContactPointUids = new Set<string>();
+  for (const contactPoint of desired.grafanaContactPoints ?? []) {
+    if (contactPoint.ensure === 'absent' && !contactPoint.uid) {
+      errors.push('grafanaContactPoints entries with ensure=absent require uid');
+    }
+    if (contactPoint.uid) {
+      if (seenContactPointUids.has(contactPoint.uid)) {
+        errors.push(`Duplicate grafanaContactPoints uid ${contactPoint.uid}`);
+      }
+      seenContactPointUids.add(contactPoint.uid);
+    }
+  }
+
+  for (const policy of desired.grafanaNotificationPolicies ?? []) {
+    if (policy.confirm !== 'I_UNDERSTAND') {
+      errors.push('grafanaNotificationPolicies replacement requires confirm=I_UNDERSTAND');
+    }
+  }
+
+  const seenDatasourceUids = new Set<string>();
+  for (const datasource of desired.grafanaDatasources ?? []) {
+    if (datasource.ensure === 'absent' && !datasource.uid) {
+      errors.push('grafanaDatasources entries with ensure=absent require uid');
+    }
+    if (datasource.uid) {
+      if (seenDatasourceUids.has(datasource.uid)) {
+        errors.push(`Duplicate grafanaDatasources uid ${datasource.uid}`);
+      }
+      seenDatasourceUids.add(datasource.uid);
+    }
+  }
+
+  const seenTeamIds = new Set<number>();
+  for (const team of desired.grafanaTeams ?? []) {
+    if (team.ensure === 'absent' && !team.id) {
+      errors.push('grafanaTeams entries with ensure=absent require id');
+    }
+    if (team.id !== undefined) {
+      if (seenTeamIds.has(team.id)) {
+        errors.push(`Duplicate grafanaTeams id ${team.id}`);
+      }
+      seenTeamIds.add(team.id);
+    }
+  }
+
+  const seenTeamMemberships = new Set<number>();
+  for (const membership of desired.grafanaTeamMemberships ?? []) {
+    if (seenTeamMemberships.has(membership.teamId)) {
+      errors.push(`Duplicate grafanaTeamMemberships teamId ${membership.teamId}`);
+    }
+    seenTeamMemberships.add(membership.teamId);
+
+    if ((membership.mode ?? 'replace') === 'replace' && membership.confirm !== 'I_UNDERSTAND') {
+      errors.push(`grafanaTeamMemberships replace mode requires confirm=I_UNDERSTAND for team ${membership.teamId}`);
+    }
+  }
+
+  const seenServiceAccountIds = new Set<number>();
+  for (const account of desired.grafanaServiceAccounts ?? []) {
+    if (account.ensure === 'absent' && !account.id) {
+      errors.push('grafanaServiceAccounts entries with ensure=absent require id');
+    }
+    if (account.id !== undefined) {
+      if (seenServiceAccountIds.has(account.id)) {
+        errors.push(`Duplicate grafanaServiceAccounts id ${account.id}`);
+      }
+      seenServiceAccountIds.add(account.id);
+    }
+  }
+
+  const seenServiceAccountTokens = new Set<string>();
+  for (const token of desired.grafanaServiceAccountTokens ?? []) {
+    const key = `${token.serviceAccountId}:${token.name}`;
+    if (seenServiceAccountTokens.has(key)) {
+      errors.push(`Duplicate grafanaServiceAccountTokens entry ${key}`);
+    }
+    seenServiceAccountTokens.add(key);
+
+    if (token.ensure === 'absent' && !token.tokenId) {
+      errors.push(`grafanaServiceAccountTokens ensure=absent requires tokenId for ${key}`);
+    }
+  }
+
   for (const dns of desired.proxmoxNodeDns ?? []) {
     if (!nodeNames.has(dns.node)) {
       warnings.push(`Node DNS config targets unknown node ${dns.node} (not found in current scan)`);

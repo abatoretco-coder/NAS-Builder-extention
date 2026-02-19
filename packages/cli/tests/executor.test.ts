@@ -100,6 +100,20 @@ function depsWithSpies() {
   const deleteFolder = vi.fn(async () => ({}));
   const upsertDashboard = vi.fn(async () => ({}));
   const deleteDashboard = vi.fn(async () => ({}));
+  const upsertAlertRuleGroup = vi.fn(async () => ({}));
+  const deleteAlertRuleGroup = vi.fn(async () => ({}));
+  const upsertContactPoint = vi.fn(async () => ({}));
+  const deleteContactPoint = vi.fn(async () => ({}));
+  const replaceNotificationPolicy = vi.fn(async () => ({}));
+  const upsertDatasource = vi.fn(async () => ({}));
+  const deleteDatasource = vi.fn(async () => ({}));
+  const upsertTeam = vi.fn(async () => ({}));
+  const deleteTeam = vi.fn(async () => ({}));
+  const syncTeamMembership = vi.fn(async () => ({}));
+  const upsertServiceAccount = vi.fn(async () => ({}));
+  const deleteServiceAccount = vi.fn(async () => ({}));
+  const createServiceAccountToken = vi.fn(async () => ({}));
+  const deleteServiceAccountToken = vi.fn(async () => ({}));
   const loggerInfo = vi.fn();
   const loggerWarn = vi.fn();
   const loggerError = vi.fn();
@@ -234,7 +248,21 @@ function depsWithSpies() {
       upsertFolder,
       deleteFolder,
       upsertDashboard,
-      deleteDashboard
+      deleteDashboard,
+      upsertAlertRuleGroup,
+      deleteAlertRuleGroup,
+      upsertContactPoint,
+      deleteContactPoint,
+      replaceNotificationPolicy,
+      upsertDatasource,
+      deleteDatasource,
+      upsertTeam,
+      deleteTeam,
+      syncTeamMembership,
+      upsertServiceAccount,
+      deleteServiceAccount,
+      createServiceAccountToken,
+      deleteServiceAccountToken
     } as unknown as ExecutorDeps['grafana'],
     logger: {
       info: loggerInfo,
@@ -341,6 +369,20 @@ function depsWithSpies() {
     deleteFolder,
     upsertDashboard,
     deleteDashboard,
+    upsertAlertRuleGroup,
+    deleteAlertRuleGroup,
+    upsertContactPoint,
+    deleteContactPoint,
+    replaceNotificationPolicy,
+    upsertDatasource,
+    deleteDatasource,
+    upsertTeam,
+    deleteTeam,
+    syncTeamMembership,
+    upsertServiceAccount,
+    deleteServiceAccount,
+    createServiceAccountToken,
+    deleteServiceAccountToken,
     loggerInfo,
     loggerWarn,
     loggerError
@@ -1191,5 +1233,81 @@ describe('executePlan rollback', () => {
     expect(deleteFolder).toHaveBeenCalledWith('old-folder');
     expect(upsertDashboard).toHaveBeenCalledWith({ uid: 'dash-ops', title: 'Ops Dashboard', dashboard: { title: 'Ops Dashboard' } });
     expect(deleteDashboard).toHaveBeenCalledWith('dash-old');
+  });
+
+  it('executes Wave 2 typed grafana alerting, datasource, team and service-account actions', async () => {
+    const {
+      deps,
+      upsertAlertRuleGroup,
+      deleteAlertRuleGroup,
+      upsertContactPoint,
+      deleteContactPoint,
+      replaceNotificationPolicy,
+      upsertDatasource,
+      deleteDatasource,
+      upsertTeam,
+      deleteTeam,
+      syncTeamMembership,
+      upsertServiceAccount,
+      deleteServiceAccount,
+      createServiceAccountToken,
+      deleteServiceAccountToken
+    } = depsWithSpies();
+
+    const plan: Plan = {
+      generatedAt: new Date().toISOString(),
+      env: 'preprod',
+      actions: [
+        { kind: 'grafana.alert-rule-group.upsert', config: { folderUid: 'ops', group: 'alerts' }, reason: 'arg upsert' },
+        { kind: 'grafana.alert-rule-group.delete', folderUid: 'ops', group: 'old', reason: 'arg delete' },
+        { kind: 'grafana.contact-point.upsert', config: { uid: 'cp1', name: 'email-main' }, reason: 'cp upsert' },
+        { kind: 'grafana.contact-point.delete', uid: 'cp-old', reason: 'cp delete' },
+        {
+          kind: 'grafana.notification-policy.replace',
+          config: { policyTree: { receiver: 'email-main' }, confirm: 'I_UNDERSTAND' },
+          reason: 'policy replace'
+        },
+        { kind: 'grafana.datasource.upsert', config: { uid: 'ds-prom', name: 'Prom', type: 'prometheus' }, reason: 'ds upsert' },
+        { kind: 'grafana.datasource.delete', uid: 'ds-old', reason: 'ds delete' },
+        { kind: 'grafana.team.upsert', config: { name: 'sre' }, reason: 'team upsert' },
+        { kind: 'grafana.team.delete', id: 12, reason: 'team delete' },
+        {
+          kind: 'grafana.team-membership.sync',
+          config: { teamId: 12, userIds: [1, 2], mode: 'replace', confirm: 'I_UNDERSTAND' },
+          reason: 'team sync'
+        },
+        { kind: 'grafana.service-account.upsert', config: { name: 'naas-sa' }, reason: 'sa upsert' },
+        { kind: 'grafana.service-account.delete', id: 33, reason: 'sa delete' },
+        {
+          kind: 'grafana.service-account-token.create',
+          config: { serviceAccountId: 33, name: 'naas-token', secondsToLive: 3600 },
+          reason: 'token create'
+        },
+        {
+          kind: 'grafana.service-account-token.delete',
+          serviceAccountId: 33,
+          tokenId: 44,
+          reason: 'token delete'
+        }
+      ]
+    };
+
+    const result = await executePlan(plan, deps, { dryRun: false, yes: true });
+
+    expect(result.ok).toBe(true);
+    expect(upsertAlertRuleGroup).toHaveBeenCalledTimes(1);
+    expect(deleteAlertRuleGroup).toHaveBeenCalledTimes(1);
+    expect(upsertContactPoint).toHaveBeenCalledTimes(1);
+    expect(deleteContactPoint).toHaveBeenCalledTimes(1);
+    expect(replaceNotificationPolicy).toHaveBeenCalledTimes(1);
+    expect(upsertDatasource).toHaveBeenCalledTimes(1);
+    expect(deleteDatasource).toHaveBeenCalledTimes(1);
+    expect(upsertTeam).toHaveBeenCalledTimes(1);
+    expect(deleteTeam).toHaveBeenCalledTimes(1);
+    expect(syncTeamMembership).toHaveBeenCalledTimes(1);
+    expect(upsertServiceAccount).toHaveBeenCalledTimes(1);
+    expect(deleteServiceAccount).toHaveBeenCalledTimes(1);
+    expect(createServiceAccountToken).toHaveBeenCalledTimes(1);
+    expect(deleteServiceAccountToken).toHaveBeenCalledTimes(1);
   });
 });

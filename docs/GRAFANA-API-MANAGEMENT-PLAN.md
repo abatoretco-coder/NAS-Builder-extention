@@ -20,6 +20,16 @@ Implemented baseline (CLI + shared):
 - Typed dashboard lifecycle:
   - `DesiredSpec.grafanaDashboards[]`
   - actions `grafana.dashboard.upsert` / `grafana.dashboard.delete`
+- Typed alerting lifecycle:
+  - `DesiredSpec.grafanaAlertRuleGroups[]`
+  - `DesiredSpec.grafanaContactPoints[]`
+  - `DesiredSpec.grafanaNotificationPolicies[]`
+- Typed governance lifecycle:
+  - `DesiredSpec.grafanaDatasources[]`
+  - `DesiredSpec.grafanaTeams[]`
+  - `DesiredSpec.grafanaTeamMemberships[]`
+  - `DesiredSpec.grafanaServiceAccounts[]`
+  - `DesiredSpec.grafanaServiceAccountTokens[]`
 
 See also:
 - `docs/API-DOCUMENTATION-SNAPSHOT.md`
@@ -27,7 +37,7 @@ See also:
 
 Remaining phases below still apply for typed domain-specific management (folders, dashboards, alerting, datasources, teams, service accounts).
 
-Note: Phase B (folders/dashboards) is now partially implemented via typed desired-spec + planner/preflight/executor/provider wiring on top of the universal API layer.
+Note: Phase B is implemented and Phases C-E are now partially implemented via typed desired-spec + planner/preflight/executor/provider wiring on top of the universal API layer.
 
 ## New mandatory instructions (before any next Grafana phase)
 

@@ -1,6 +1,19 @@
 import https from 'node:https';
 import axios from 'axios';
-import type { GrafanaDashboard, GrafanaDashboardConfig, GrafanaDatasource, GrafanaFolderConfig } from '@naas/shared';
+import type {
+  GrafanaAlertRuleGroupConfig,
+  GrafanaContactPointConfig,
+  GrafanaDashboard,
+  GrafanaDashboardConfig,
+  GrafanaDatasource,
+  GrafanaDatasourceConfig,
+  GrafanaFolderConfig,
+  GrafanaNotificationPolicyConfig,
+  GrafanaServiceAccountConfig,
+  GrafanaServiceAccountTokenConfig,
+  GrafanaTeamConfig,
+  GrafanaTeamMembershipConfig
+} from '@naas/shared';
 import type { GrafanaAuth } from '../config/secrets.js';
 import {
   evaluateGrafanaCrudPolicy,
@@ -143,6 +156,114 @@ export class GrafanaProvider {
 
   async deleteDashboard(uid: string): Promise<unknown> {
     return this.grafanaRequest('delete', `/api/dashboards/uid/${encodeURIComponent(uid)}`);
+  }
+
+  async upsertAlertRuleGroup(config: GrafanaAlertRuleGroupConfig): Promise<unknown> {
+    return this.grafanaRequest('put', `/api/v1/provisioning/folder/${encodeURIComponent(config.folderUid)}/rule-groups/${encodeURIComponent(config.group)}`, {
+      body: {
+        folderUid: config.folderUid,
+        name: config.group,
+        interval: config.intervalSeconds,
+        rules: config.rules ?? []
+      }
+    });
+  }
+
+  async deleteAlertRuleGroup(folderUid: string, group: string): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/v1/provisioning/folder/${encodeURIComponent(folderUid)}/rule-groups/${encodeURIComponent(group)}`);
+  }
+
+  async upsertContactPoint(config: GrafanaContactPointConfig): Promise<unknown> {
+    return this.grafanaRequest('post', '/api/v1/provisioning/contact-points', {
+      body: {
+        uid: config.uid,
+        name: config.name,
+        type: config.type,
+        settings: config.settings ?? {}
+      }
+    });
+  }
+
+  async deleteContactPoint(uid: string): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/v1/provisioning/contact-points/${encodeURIComponent(uid)}`);
+  }
+
+  async replaceNotificationPolicy(config: GrafanaNotificationPolicyConfig): Promise<unknown> {
+    return this.grafanaRequest('put', '/api/v1/provisioning/policies', {
+      body: {
+        ...config.policyTree,
+        confirm: config.confirm
+      }
+    });
+  }
+
+  async upsertDatasource(config: GrafanaDatasourceConfig): Promise<unknown> {
+    return this.grafanaRequest('post', '/api/datasources', {
+      body: {
+        uid: config.uid,
+        name: config.name,
+        type: config.type,
+        access: config.access,
+        url: config.url,
+        isDefault: config.isDefault,
+        jsonData: config.jsonData,
+        secureJsonData: config.secureJsonData
+      }
+    });
+  }
+
+  async deleteDatasource(uid: string): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/datasources/uid/${encodeURIComponent(uid)}`);
+  }
+
+  async upsertTeam(config: GrafanaTeamConfig): Promise<unknown> {
+    return this.grafanaRequest('post', '/api/teams', {
+      body: {
+        name: config.name,
+        email: config.email
+      }
+    });
+  }
+
+  async deleteTeam(id: number): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/teams/${id}`);
+  }
+
+  async syncTeamMembership(config: GrafanaTeamMembershipConfig): Promise<unknown> {
+    const method = config.mode === 'add' ? 'post' : 'put';
+    return this.grafanaRequest(method, `/api/teams/${config.teamId}/members`, {
+      body: {
+        members: config.userIds.map((userId) => ({ userId })),
+        confirm: config.confirm
+      }
+    });
+  }
+
+  async upsertServiceAccount(config: GrafanaServiceAccountConfig): Promise<unknown> {
+    return this.grafanaRequest('post', '/api/serviceaccounts', {
+      body: {
+        name: config.name,
+        role: config.role,
+        isDisabled: config.isDisabled
+      }
+    });
+  }
+
+  async deleteServiceAccount(id: number): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/serviceaccounts/${id}`);
+  }
+
+  async createServiceAccountToken(config: GrafanaServiceAccountTokenConfig): Promise<unknown> {
+    return this.grafanaRequest('post', `/api/serviceaccounts/${config.serviceAccountId}/tokens`, {
+      body: {
+        name: config.name,
+        secondsToLive: config.secondsToLive
+      }
+    });
+  }
+
+  async deleteServiceAccountToken(serviceAccountId: number, tokenId: number): Promise<unknown> {
+    return this.grafanaRequest('delete', `/api/serviceaccounts/${serviceAccountId}/tokens/${tokenId}`);
   }
 }
 

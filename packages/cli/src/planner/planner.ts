@@ -906,6 +906,141 @@ function planAppActions(desired: DesiredSpec): PlanAction[] {
     });
   }
 
+  for (const alertRuleGroup of desired.grafanaAlertRuleGroups ?? []) {
+    if (alertRuleGroup.ensure === 'absent') {
+      actions.push({
+        kind: 'grafana.alert-rule-group.delete',
+        folderUid: alertRuleGroup.folderUid,
+        group: alertRuleGroup.group,
+        reason: `Ensure Grafana alert rule group ${alertRuleGroup.folderUid}/${alertRuleGroup.group} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.alert-rule-group.upsert',
+      config: alertRuleGroup,
+      reason: `Ensure Grafana alert rule group ${alertRuleGroup.folderUid}/${alertRuleGroup.group} is present`
+    });
+  }
+
+  for (const contactPoint of desired.grafanaContactPoints ?? []) {
+    if (contactPoint.ensure === 'absent') {
+      if (!contactPoint.uid) {
+        continue;
+      }
+      actions.push({
+        kind: 'grafana.contact-point.delete',
+        uid: contactPoint.uid,
+        reason: `Ensure Grafana contact point ${contactPoint.uid} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.contact-point.upsert',
+      config: contactPoint,
+      reason: `Ensure Grafana contact point ${contactPoint.name} is present`
+    });
+  }
+
+  for (const policy of desired.grafanaNotificationPolicies ?? []) {
+    actions.push({
+      kind: 'grafana.notification-policy.replace',
+      config: policy,
+      reason: 'Ensure Grafana notification policy tree is up to date'
+    });
+  }
+
+  for (const datasource of desired.grafanaDatasources ?? []) {
+    if (datasource.ensure === 'absent') {
+      if (!datasource.uid) {
+        continue;
+      }
+      actions.push({
+        kind: 'grafana.datasource.delete',
+        uid: datasource.uid,
+        reason: `Ensure Grafana datasource ${datasource.uid} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.datasource.upsert',
+      config: datasource,
+      reason: `Ensure Grafana datasource ${datasource.name} is present`
+    });
+  }
+
+  for (const team of desired.grafanaTeams ?? []) {
+    if (team.ensure === 'absent') {
+      if (!team.id) {
+        continue;
+      }
+      actions.push({
+        kind: 'grafana.team.delete',
+        id: team.id,
+        reason: `Ensure Grafana team ${team.id} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.team.upsert',
+      config: team,
+      reason: `Ensure Grafana team ${team.name} is present`
+    });
+  }
+
+  for (const membership of desired.grafanaTeamMemberships ?? []) {
+    actions.push({
+      kind: 'grafana.team-membership.sync',
+      config: membership,
+      reason: `Ensure Grafana team membership for team ${membership.teamId} is synchronized`
+    });
+  }
+
+  for (const serviceAccount of desired.grafanaServiceAccounts ?? []) {
+    if (serviceAccount.ensure === 'absent') {
+      if (!serviceAccount.id) {
+        continue;
+      }
+      actions.push({
+        kind: 'grafana.service-account.delete',
+        id: serviceAccount.id,
+        reason: `Ensure Grafana service account ${serviceAccount.id} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.service-account.upsert',
+      config: serviceAccount,
+      reason: `Ensure Grafana service account ${serviceAccount.name} is present`
+    });
+  }
+
+  for (const token of desired.grafanaServiceAccountTokens ?? []) {
+    if (token.ensure === 'absent') {
+      if (!token.tokenId) {
+        continue;
+      }
+      actions.push({
+        kind: 'grafana.service-account-token.delete',
+        serviceAccountId: token.serviceAccountId,
+        tokenId: token.tokenId,
+        reason: `Ensure Grafana service account token ${token.serviceAccountId}/${token.tokenId} is absent`
+      });
+      continue;
+    }
+
+    actions.push({
+      kind: 'grafana.service-account-token.create',
+      config: token,
+      reason: `Ensure Grafana service account token ${token.serviceAccountId}/${token.name} exists`
+    });
+  }
+
   for (const operation of desired.grafanaCrud ?? []) {
     const isLegacyCrudMethod =
       operation.method === 'create' ||

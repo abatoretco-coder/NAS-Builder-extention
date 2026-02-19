@@ -170,6 +170,69 @@ export interface GrafanaDashboardConfig {
   dashboard?: Record<string, unknown>;
 }
 
+export interface GrafanaAlertRuleGroupConfig {
+  folderUid: string;
+  group: string;
+  ensure?: 'present' | 'absent';
+  intervalSeconds?: number;
+  rules?: Array<Record<string, unknown>>;
+}
+
+export interface GrafanaContactPointConfig {
+  uid?: string;
+  name: string;
+  ensure?: 'present' | 'absent';
+  type?: string;
+  settings?: Record<string, unknown>;
+}
+
+export interface GrafanaNotificationPolicyConfig {
+  policyTree: Record<string, unknown>;
+  confirm?: string;
+}
+
+export interface GrafanaDatasourceConfig {
+  uid?: string;
+  name: string;
+  type: string;
+  ensure?: 'present' | 'absent';
+  access?: string;
+  url?: string;
+  isDefault?: boolean;
+  jsonData?: Record<string, unknown>;
+  secureJsonData?: Record<string, unknown>;
+}
+
+export interface GrafanaTeamConfig {
+  id?: number;
+  name: string;
+  ensure?: 'present' | 'absent';
+  email?: string;
+}
+
+export interface GrafanaTeamMembershipConfig {
+  teamId: number;
+  userIds: number[];
+  mode?: 'replace' | 'add';
+  confirm?: string;
+}
+
+export interface GrafanaServiceAccountConfig {
+  id?: number;
+  name: string;
+  ensure?: 'present' | 'absent';
+  role?: string;
+  isDisabled?: boolean;
+}
+
+export interface GrafanaServiceAccountTokenConfig {
+  serviceAccountId: number;
+  name: string;
+  ensure?: 'present' | 'absent';
+  tokenId?: number;
+  secondsToLive?: number;
+}
+
 export interface UnifiedState {
   generatedAt: string;
   env: EnvironmentName;
@@ -692,6 +755,14 @@ export interface DesiredSpec {
   grafanaCrud?: GrafanaCrudConfig[];
   grafanaFolders?: GrafanaFolderConfig[];
   grafanaDashboards?: GrafanaDashboardConfig[];
+  grafanaAlertRuleGroups?: GrafanaAlertRuleGroupConfig[];
+  grafanaContactPoints?: GrafanaContactPointConfig[];
+  grafanaNotificationPolicies?: GrafanaNotificationPolicyConfig[];
+  grafanaDatasources?: GrafanaDatasourceConfig[];
+  grafanaTeams?: GrafanaTeamConfig[];
+  grafanaTeamMemberships?: GrafanaTeamMembershipConfig[];
+  grafanaServiceAccounts?: GrafanaServiceAccountConfig[];
+  grafanaServiceAccountTokens?: GrafanaServiceAccountTokenConfig[];
   validation?: {
     enabled?: boolean;
     prometheusDatasourceName?: string;
@@ -1067,6 +1138,78 @@ export type PlanAction =
   | {
       kind: 'grafana.dashboard.delete';
       uid: string;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.alert-rule-group.upsert';
+      config: GrafanaAlertRuleGroupConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.alert-rule-group.delete';
+      folderUid: string;
+      group: string;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.contact-point.upsert';
+      config: GrafanaContactPointConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.contact-point.delete';
+      uid: string;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.notification-policy.replace';
+      config: GrafanaNotificationPolicyConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.datasource.upsert';
+      config: GrafanaDatasourceConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.datasource.delete';
+      uid: string;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.team.upsert';
+      config: GrafanaTeamConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.team.delete';
+      id: number;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.team-membership.sync';
+      config: GrafanaTeamMembershipConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.service-account.upsert';
+      config: GrafanaServiceAccountConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.service-account.delete';
+      id: number;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.service-account-token.create';
+      config: GrafanaServiceAccountTokenConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.service-account-token.delete';
+      serviceAccountId: number;
+      tokenId: number;
       reason: string;
     }
   | {

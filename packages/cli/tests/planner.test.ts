@@ -156,6 +156,43 @@ describe('buildPlan', () => {
     );
   });
 
+  it('adds Wave 2 typed grafana actions for alerting, datasource, team and service-account domains', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      grafanaAlertRuleGroups: [{ folderUid: 'ops', group: 'alerts' }],
+      grafanaContactPoints: [{ uid: 'cp1', name: 'email-main' }, { uid: 'cp-old', name: 'old', ensure: 'absent' }],
+      grafanaNotificationPolicies: [{ policyTree: { receiver: 'email-main' }, confirm: 'I_UNDERSTAND' }],
+      grafanaDatasources: [
+        { uid: 'ds-prom', name: 'Prom', type: 'prometheus' },
+        { uid: 'ds-old', name: 'Old', type: 'prometheus', ensure: 'absent' }
+      ],
+      grafanaTeams: [{ name: 'sre' }, { id: 12, name: 'old-team', ensure: 'absent' }],
+      grafanaTeamMemberships: [{ teamId: 12, userIds: [1], mode: 'replace', confirm: 'I_UNDERSTAND' }],
+      grafanaServiceAccounts: [{ name: 'naas-sa' }, { id: 33, name: 'old-sa', ensure: 'absent' }],
+      grafanaServiceAccountTokens: [
+        { serviceAccountId: 33, name: 'naas-token' },
+        { serviceAccountId: 33, name: 'old-token', ensure: 'absent', tokenId: 44 }
+      ]
+    };
+
+    const plan = buildPlan(current, desired);
+    expect(plan.actions.some((action) => action.kind === 'grafana.alert-rule-group.upsert')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.contact-point.upsert')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.contact-point.delete')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.notification-policy.replace')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.datasource.upsert')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.datasource.delete')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.team.upsert')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.team.delete')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.team-membership.sync')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.service-account.upsert')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.service-account.delete')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.service-account-token.create')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.service-account-token.delete')).toBe(true);
+  });
+
   it('adds vm provisioning action when vm does not exist', () => {
     const current = baseState();
     const desired: DesiredSpec = {

@@ -758,6 +758,69 @@ const grafanaDashboardSchema = z.object({
   dashboard: z.record(z.unknown()).optional()
 });
 
+const grafanaAlertRuleGroupSchema = z.object({
+  folderUid: z.string().min(1),
+  group: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  intervalSeconds: z.number().int().positive().optional(),
+  rules: z.array(z.record(z.unknown())).optional()
+});
+
+const grafanaContactPointSchema = z.object({
+  uid: z.string().min(1).optional(),
+  name: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  type: z.string().min(1).optional(),
+  settings: z.record(z.unknown()).optional()
+});
+
+const grafanaNotificationPolicySchema = z.object({
+  policyTree: z.record(z.unknown()),
+  confirm: z.string().optional()
+});
+
+const grafanaDatasourceSchema = z.object({
+  uid: z.string().min(1).optional(),
+  name: z.string().min(1),
+  type: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  access: z.string().optional(),
+  url: z.string().optional(),
+  isDefault: z.boolean().optional(),
+  jsonData: z.record(z.unknown()).optional(),
+  secureJsonData: z.record(z.unknown()).optional()
+});
+
+const grafanaTeamSchema = z.object({
+  id: z.number().int().positive().optional(),
+  name: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  email: z.string().optional()
+});
+
+const grafanaTeamMembershipSchema = z.object({
+  teamId: z.number().int().positive(),
+  userIds: z.array(z.number().int().positive()).min(1),
+  mode: z.enum(['replace', 'add']).optional(),
+  confirm: z.string().optional()
+});
+
+const grafanaServiceAccountSchema = z.object({
+  id: z.number().int().positive().optional(),
+  name: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  role: z.string().optional(),
+  isDisabled: z.boolean().optional()
+});
+
+const grafanaServiceAccountTokenSchema = z.object({
+  serviceAccountId: z.number().int().positive(),
+  name: z.string().min(1),
+  ensure: z.enum(['present', 'absent']).optional(),
+  tokenId: z.number().int().positive().optional(),
+  secondsToLive: z.number().int().positive().optional()
+});
+
 // ============================================================================
 // Main desired spec schema
 // ============================================================================
@@ -785,6 +848,14 @@ export const desiredSpecSchema = z.object({
   grafanaCrud: z.array(grafanaCrudSchema).optional(),
   grafanaFolders: z.array(grafanaFolderSchema).optional(),
   grafanaDashboards: z.array(grafanaDashboardSchema).optional(),
+  grafanaAlertRuleGroups: z.array(grafanaAlertRuleGroupSchema).optional(),
+  grafanaContactPoints: z.array(grafanaContactPointSchema).optional(),
+  grafanaNotificationPolicies: z.array(grafanaNotificationPolicySchema).optional(),
+  grafanaDatasources: z.array(grafanaDatasourceSchema).optional(),
+  grafanaTeams: z.array(grafanaTeamSchema).optional(),
+  grafanaTeamMemberships: z.array(grafanaTeamMembershipSchema).optional(),
+  grafanaServiceAccounts: z.array(grafanaServiceAccountSchema).optional(),
+  grafanaServiceAccountTokens: z.array(grafanaServiceAccountTokenSchema).optional(),
   validation: z
     .object({
       enabled: z.boolean().optional(),
