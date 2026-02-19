@@ -5,3 +5,6 @@ dist/
 *.vsix
 state/
 .env
+*.tsbuildinfo
+tmp*
+packages/vscode-extension/tmp*
