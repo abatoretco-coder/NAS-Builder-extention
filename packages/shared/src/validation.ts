@@ -821,6 +821,37 @@ const grafanaServiceAccountTokenSchema = z.object({
   secondsToLive: z.number().int().positive().optional()
 });
 
+const grafanaFolderReadSchema = z.object({
+  uid: z.string().min(1).optional()
+});
+
+const grafanaDashboardReadSchema = z.object({
+  uid: z.string().min(1)
+});
+
+const grafanaAlertRuleGroupReadSchema = z.object({
+  folderUid: z.string().min(1),
+  group: z.string().min(1)
+});
+
+const grafanaContactPointReadSchema = z.object({
+  uid: z.string().min(1).optional()
+});
+
+const grafanaDatasourceHealthCheckSchema = z.object({
+  uid: z.string().min(1)
+});
+
+const grafanaDatasourceQuerySchema = z.object({
+  queries: z.array(z.record(z.unknown())).min(1),
+  from: z.string().optional(),
+  to: z.string().optional()
+});
+
+const grafanaServiceAccountTokenListSchema = z.object({
+  serviceAccountId: z.number().int().positive()
+});
+
 // ============================================================================
 // Main desired spec schema
 // ============================================================================
@@ -856,6 +887,14 @@ export const desiredSpecSchema = z.object({
   grafanaTeamMemberships: z.array(grafanaTeamMembershipSchema).optional(),
   grafanaServiceAccounts: z.array(grafanaServiceAccountSchema).optional(),
   grafanaServiceAccountTokens: z.array(grafanaServiceAccountTokenSchema).optional(),
+  grafanaFolderReads: z.array(grafanaFolderReadSchema).optional(),
+  grafanaDashboardReads: z.array(grafanaDashboardReadSchema).optional(),
+  grafanaAlertRuleGroupReads: z.array(grafanaAlertRuleGroupReadSchema).optional(),
+  grafanaContactPointReads: z.array(grafanaContactPointReadSchema).optional(),
+  grafanaNotificationPolicyRead: z.boolean().optional(),
+  grafanaDatasourceHealthChecks: z.array(grafanaDatasourceHealthCheckSchema).optional(),
+  grafanaDatasourceQueries: z.array(grafanaDatasourceQuerySchema).optional(),
+  grafanaServiceAccountTokenLists: z.array(grafanaServiceAccountTokenListSchema).optional(),
   validation: z
     .object({
       enabled: z.boolean().optional(),

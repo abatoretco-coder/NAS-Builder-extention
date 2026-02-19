@@ -2,14 +2,21 @@ import https from 'node:https';
 import axios from 'axios';
 import type {
   GrafanaAlertRuleGroupConfig,
+  GrafanaAlertRuleGroupReadConfig,
+  GrafanaContactPointReadConfig,
   GrafanaContactPointConfig,
   GrafanaDashboard,
   GrafanaDashboardConfig,
+  GrafanaDashboardReadConfig,
   GrafanaDatasource,
   GrafanaDatasourceConfig,
+  GrafanaDatasourceHealthCheckConfig,
+  GrafanaDatasourceQueryConfig,
+  GrafanaFolderReadConfig,
   GrafanaFolderConfig,
   GrafanaNotificationPolicyConfig,
   GrafanaServiceAccountConfig,
+  GrafanaServiceAccountTokenListConfig,
   GrafanaServiceAccountTokenConfig,
   GrafanaTeamConfig,
   GrafanaTeamMembershipConfig
@@ -264,6 +271,50 @@ export class GrafanaProvider {
 
   async deleteServiceAccountToken(serviceAccountId: number, tokenId: number): Promise<unknown> {
     return this.grafanaRequest('delete', `/api/serviceaccounts/${serviceAccountId}/tokens/${tokenId}`);
+  }
+
+  async readFolder(config: GrafanaFolderReadConfig): Promise<unknown> {
+    if (config.uid) {
+      return this.grafanaRequest('get', `/api/folders/${encodeURIComponent(config.uid)}`);
+    }
+    return this.grafanaRequest('get', '/api/folders');
+  }
+
+  async readDashboard(config: GrafanaDashboardReadConfig): Promise<unknown> {
+    return this.grafanaRequest('get', `/api/dashboards/uid/${encodeURIComponent(config.uid)}`);
+  }
+
+  async readAlertRuleGroup(config: GrafanaAlertRuleGroupReadConfig): Promise<unknown> {
+    return this.grafanaRequest('get', `/api/v1/provisioning/folder/${encodeURIComponent(config.folderUid)}/rule-groups/${encodeURIComponent(config.group)}`);
+  }
+
+  async readContactPoint(config: GrafanaContactPointReadConfig): Promise<unknown> {
+    if (config.uid) {
+      return this.grafanaRequest('get', `/api/v1/provisioning/contact-points/${encodeURIComponent(config.uid)}`);
+    }
+    return this.grafanaRequest('get', '/api/v1/provisioning/contact-points');
+  }
+
+  async readNotificationPolicy(): Promise<unknown> {
+    return this.grafanaRequest('get', '/api/v1/provisioning/policies');
+  }
+
+  async checkDatasourceHealth(config: GrafanaDatasourceHealthCheckConfig): Promise<unknown> {
+    return this.grafanaRequest('get', `/api/datasources/uid/${encodeURIComponent(config.uid)}/health`);
+  }
+
+  async queryDatasource(config: GrafanaDatasourceQueryConfig): Promise<unknown> {
+    return this.grafanaRequest('post', '/api/ds/query', {
+      body: {
+        queries: config.queries,
+        from: config.from,
+        to: config.to
+      }
+    });
+  }
+
+  async listServiceAccountTokens(config: GrafanaServiceAccountTokenListConfig): Promise<unknown> {
+    return this.grafanaRequest('get', `/api/serviceaccounts/${config.serviceAccountId}/tokens`);
   }
 }
 

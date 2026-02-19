@@ -938,6 +938,62 @@ async function executeAction(action: PlanAction, deps: ExecutorDeps): Promise<st
       }
       await deps.grafana.deleteServiceAccountToken(action.serviceAccountId, action.tokenId);
       return '';
+    case 'grafana.folder.read': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.readFolder(action.config);
+      return JSON.stringify(result ?? {});
+    }
+    case 'grafana.dashboard.read': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.readDashboard(action.config);
+      return JSON.stringify(result ?? {});
+    }
+    case 'grafana.alert-rule-group.read': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.readAlertRuleGroup(action.config);
+      return JSON.stringify(result ?? {});
+    }
+    case 'grafana.contact-point.read': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.readContactPoint(action.config);
+      return JSON.stringify(result ?? {});
+    }
+    case 'grafana.notification-policy.read': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.readNotificationPolicy();
+      return JSON.stringify(result ?? {});
+    }
+    case 'grafana.datasource.health-check': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.checkDatasourceHealth(action.config);
+      return JSON.stringify(result ?? {});
+    }
+    case 'grafana.datasource.query': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.queryDatasource(action.config);
+      return JSON.stringify(result ?? {});
+    }
+    case 'grafana.service-account-token.list': {
+      if (!deps.grafana) {
+        throw new Error('Grafana provider not configured');
+      }
+      const result = await deps.grafana.listServiceAccountTokens(action.config);
+      return JSON.stringify(result ?? {});
+    }
     case 'grafana.create':
       if (!deps.grafana) {
         throw new Error('Grafana provider not configured');

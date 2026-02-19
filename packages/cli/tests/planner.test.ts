@@ -193,6 +193,32 @@ describe('buildPlan', () => {
     expect(plan.actions.some((action) => action.kind === 'grafana.service-account-token.delete')).toBe(true);
   });
 
+  it('adds Wave 3 typed grafana read health query and token-list actions', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      grafanaFolderReads: [{ uid: 'ops' }],
+      grafanaDashboardReads: [{ uid: 'dash-ops' }],
+      grafanaAlertRuleGroupReads: [{ folderUid: 'ops', group: 'alerts' }],
+      grafanaContactPointReads: [{ uid: 'cp1' }],
+      grafanaNotificationPolicyRead: true,
+      grafanaDatasourceHealthChecks: [{ uid: 'ds-prom' }],
+      grafanaDatasourceQueries: [{ queries: [{ refId: 'A' }] }],
+      grafanaServiceAccountTokenLists: [{ serviceAccountId: 33 }]
+    };
+
+    const plan = buildPlan(current, desired);
+    expect(plan.actions.some((action) => action.kind === 'grafana.folder.read')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.dashboard.read')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.alert-rule-group.read')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.contact-point.read')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.notification-policy.read')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.datasource.health-check')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.datasource.query')).toBe(true);
+    expect(plan.actions.some((action) => action.kind === 'grafana.service-account-token.list')).toBe(true);
+  });
+
   it('adds vm provisioning action when vm does not exist', () => {
     const current = baseState();
     const desired: DesiredSpec = {

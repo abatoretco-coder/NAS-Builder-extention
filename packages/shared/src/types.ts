@@ -233,6 +233,37 @@ export interface GrafanaServiceAccountTokenConfig {
   secondsToLive?: number;
 }
 
+export interface GrafanaFolderReadConfig {
+  uid?: string;
+}
+
+export interface GrafanaDashboardReadConfig {
+  uid: string;
+}
+
+export interface GrafanaAlertRuleGroupReadConfig {
+  folderUid: string;
+  group: string;
+}
+
+export interface GrafanaContactPointReadConfig {
+  uid?: string;
+}
+
+export interface GrafanaDatasourceHealthCheckConfig {
+  uid: string;
+}
+
+export interface GrafanaDatasourceQueryConfig {
+  queries: Record<string, unknown>[];
+  from?: string;
+  to?: string;
+}
+
+export interface GrafanaServiceAccountTokenListConfig {
+  serviceAccountId: number;
+}
+
 export interface UnifiedState {
   generatedAt: string;
   env: EnvironmentName;
@@ -763,6 +794,14 @@ export interface DesiredSpec {
   grafanaTeamMemberships?: GrafanaTeamMembershipConfig[];
   grafanaServiceAccounts?: GrafanaServiceAccountConfig[];
   grafanaServiceAccountTokens?: GrafanaServiceAccountTokenConfig[];
+  grafanaFolderReads?: GrafanaFolderReadConfig[];
+  grafanaDashboardReads?: GrafanaDashboardReadConfig[];
+  grafanaAlertRuleGroupReads?: GrafanaAlertRuleGroupReadConfig[];
+  grafanaContactPointReads?: GrafanaContactPointReadConfig[];
+  grafanaNotificationPolicyRead?: boolean;
+  grafanaDatasourceHealthChecks?: GrafanaDatasourceHealthCheckConfig[];
+  grafanaDatasourceQueries?: GrafanaDatasourceQueryConfig[];
+  grafanaServiceAccountTokenLists?: GrafanaServiceAccountTokenListConfig[];
   validation?: {
     enabled?: boolean;
     prometheusDatasourceName?: string;
@@ -1210,6 +1249,45 @@ export type PlanAction =
       kind: 'grafana.service-account-token.delete';
       serviceAccountId: number;
       tokenId: number;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.folder.read';
+      config: GrafanaFolderReadConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.dashboard.read';
+      config: GrafanaDashboardReadConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.alert-rule-group.read';
+      config: GrafanaAlertRuleGroupReadConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.contact-point.read';
+      config: GrafanaContactPointReadConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.notification-policy.read';
+      reason: string;
+    }
+  | {
+      kind: 'grafana.datasource.health-check';
+      config: GrafanaDatasourceHealthCheckConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.datasource.query';
+      config: GrafanaDatasourceQueryConfig;
+      reason: string;
+    }
+  | {
+      kind: 'grafana.service-account-token.list';
+      config: GrafanaServiceAccountTokenListConfig;
       reason: string;
     }
   | {

@@ -114,6 +114,14 @@ function depsWithSpies() {
   const deleteServiceAccount = vi.fn(async () => ({}));
   const createServiceAccountToken = vi.fn(async () => ({}));
   const deleteServiceAccountToken = vi.fn(async () => ({}));
+  const readFolder = vi.fn(async () => ({}));
+  const readDashboard = vi.fn(async () => ({}));
+  const readAlertRuleGroup = vi.fn(async () => ({}));
+  const readContactPoint = vi.fn(async () => ({}));
+  const readNotificationPolicy = vi.fn(async () => ({}));
+  const checkDatasourceHealth = vi.fn(async () => ({}));
+  const queryDatasource = vi.fn(async () => ({}));
+  const listServiceAccountTokens = vi.fn(async () => ({}));
   const loggerInfo = vi.fn();
   const loggerWarn = vi.fn();
   const loggerError = vi.fn();
@@ -262,7 +270,15 @@ function depsWithSpies() {
       upsertServiceAccount,
       deleteServiceAccount,
       createServiceAccountToken,
-      deleteServiceAccountToken
+      deleteServiceAccountToken,
+      readFolder,
+      readDashboard,
+      readAlertRuleGroup,
+      readContactPoint,
+      readNotificationPolicy,
+      checkDatasourceHealth,
+      queryDatasource,
+      listServiceAccountTokens
     } as unknown as ExecutorDeps['grafana'],
     logger: {
       info: loggerInfo,
@@ -383,6 +399,14 @@ function depsWithSpies() {
     deleteServiceAccount,
     createServiceAccountToken,
     deleteServiceAccountToken,
+    readFolder,
+    readDashboard,
+    readAlertRuleGroup,
+    readContactPoint,
+    readNotificationPolicy,
+    checkDatasourceHealth,
+    queryDatasource,
+    listServiceAccountTokens,
     loggerInfo,
     loggerWarn,
     loggerError
@@ -1309,5 +1333,46 @@ describe('executePlan rollback', () => {
     expect(deleteServiceAccount).toHaveBeenCalledTimes(1);
     expect(createServiceAccountToken).toHaveBeenCalledTimes(1);
     expect(deleteServiceAccountToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('executes Wave 3 typed grafana read/health/query/list actions', async () => {
+    const {
+      deps,
+      readFolder,
+      readDashboard,
+      readAlertRuleGroup,
+      readContactPoint,
+      readNotificationPolicy,
+      checkDatasourceHealth,
+      queryDatasource,
+      listServiceAccountTokens
+    } = depsWithSpies();
+
+    const plan: Plan = {
+      generatedAt: new Date().toISOString(),
+      env: 'preprod',
+      actions: [
+        { kind: 'grafana.folder.read', config: { uid: 'ops' }, reason: 'read folder' },
+        { kind: 'grafana.dashboard.read', config: { uid: 'dash-ops' }, reason: 'read dashboard' },
+        { kind: 'grafana.alert-rule-group.read', config: { folderUid: 'ops', group: 'alerts' }, reason: 'read arg' },
+        { kind: 'grafana.contact-point.read', config: { uid: 'cp1' }, reason: 'read cp' },
+        { kind: 'grafana.notification-policy.read', reason: 'read policy' },
+        { kind: 'grafana.datasource.health-check', config: { uid: 'ds-prom' }, reason: 'health' },
+        { kind: 'grafana.datasource.query', config: { queries: [{ refId: 'A' }] }, reason: 'query' },
+        { kind: 'grafana.service-account-token.list', config: { serviceAccountId: 33 }, reason: 'list tokens' }
+      ]
+    };
+
+    const result = await executePlan(plan, deps, { dryRun: false, yes: true });
+
+    expect(result.ok).toBe(true);
+    expect(readFolder).toHaveBeenCalledTimes(1);
+    expect(readDashboard).toHaveBeenCalledTimes(1);
+    expect(readAlertRuleGroup).toHaveBeenCalledTimes(1);
+    expect(readContactPoint).toHaveBeenCalledTimes(1);
+    expect(readNotificationPolicy).toHaveBeenCalledTimes(1);
+    expect(checkDatasourceHealth).toHaveBeenCalledTimes(1);
+    expect(queryDatasource).toHaveBeenCalledTimes(1);
+    expect(listServiceAccountTokens).toHaveBeenCalledTimes(1);
   });
 });

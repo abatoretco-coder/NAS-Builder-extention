@@ -1,54 +1,82 @@
 # Grafana API Coverage Audit (Post-Implementation)
 
-Last updated: 2026-02-19
+Last updated: 2026-02-20
 
 ## Executive summary
 
-Grafana is now managed through a universal request layer in NAAS:
-- Desired spec: `grafanaCrud[]` supports legacy CRUD aliases and raw HTTP methods (`get/post/put/patch/delete/head/options`).
-- Planner emits either legacy `grafana.{create|read|update|delete}` actions or universal `grafana.request`.
-- Preflight enforces path/method safety and high-risk confirmation checks.
-- Executor dispatches all Grafana actions through `GrafanaProvider.grafanaRequest(...)`.
+Grafana coverage is now implemented in three layers:
+- Universal control plane (`grafanaCrud` / `grafana.request`) for broad HTTP API reach.
+- Typed write lifecycle for folders, dashboards, alerting, datasources, teams, service accounts.
+- Typed read/check/query/list lifecycle for core verification flows.
 
-This architecture enables one-pass support for the broad Grafana HTTP API surface without adding one wrapper per endpoint.
+## Status legend
 
-## Coverage matrix (family-level)
+- ✅ Implemented typed action(s)
+- 🟨 Implemented through universal fallback (`grafanaCrud` / `grafana.request`)
+- ⛔ Blocked by safety policy
 
-Status legend:
-- ✅ Callable through universal API layer
-- ⚠️ Restricted by safety policy (explicit confirmation needed on high-risk writes)
-- ⛔ Blocked by policy
+## Endpoint-by-endpoint matrix
 
-Core families from Grafana HTTP API TOC:
-- Admin API: ✅ (within allowed `/api` paths), ⛔ blocked for `/admin/provisioning` and `/admin/settings`
-- Alerting provisioning API: ✅, ⚠️ policy replacement flows require explicit confirmation
-- Dashboard API: ✅
-- Folder API: ✅, ⚠️ destructive/high-risk folder operations require explicit confirmation
-- Folder/Dashboard search API: ✅
-- Data source API: ✅
-- Team API: ✅
-- Service account API: ✅, ⚠️ high-risk writes require explicit confirmation
-- Organization API: ✅ (with optional `orgId` mapped to `X-Grafana-Org-Id`)
-- Preferences/Playlist/Snapshot/Short URL/Annotations/Library/etc.: ✅
-- `/apis/*` resources (new API structure): ✅
+### Folders & Dashboards
 
-## Implemented safety model
+- `POST /api/folders` → ✅ `grafana.folder.upsert`
+- `DELETE /api/folders/:uid` → ✅ `grafana.folder.delete`
+- `GET /api/folders` / `GET /api/folders/:uid` → ✅ `grafana.folder.read`
+- `POST /api/dashboards/db` → ✅ `grafana.dashboard.upsert`
+- `DELETE /api/dashboards/uid/:uid` → ✅ `grafana.dashboard.delete`
+- `GET /api/dashboards/uid/:uid` → ✅ `grafana.dashboard.read`
 
-- Allowed prefixes: `/api`, `/apis`
-- Explicit deny segments:
-  - `/admin/provisioning`
-  - `/admin/settings`
-- High-risk write operations require `confirm: I_UNDERSTAND` in payload/body.
-- Preflight rejects invalid/unsafe Grafana operations before apply.
+### Alerting provisioning
 
-## Verification performed
+- `PUT /api/v1/provisioning/folder/:folderUid/rule-groups/:group` → ✅ `grafana.alert-rule-group.upsert`
+- `DELETE /api/v1/provisioning/folder/:folderUid/rule-groups/:group` → ✅ `grafana.alert-rule-group.delete`
+- `GET /api/v1/provisioning/folder/:folderUid/rule-groups/:group` → ✅ `grafana.alert-rule-group.read`
+- `POST /api/v1/provisioning/contact-points` → ✅ `grafana.contact-point.upsert`
+- `DELETE /api/v1/provisioning/contact-points/:uid` → ✅ `grafana.contact-point.delete`
+- `GET /api/v1/provisioning/contact-points` (+ by uid) → ✅ `grafana.contact-point.read`
+- `PUT /api/v1/provisioning/policies` → ✅ `grafana.notification-policy.replace` (confirm required)
+- `GET /api/v1/provisioning/policies` → ✅ `grafana.notification-policy.read`
 
-Implemented and validated in tests:
-- Planner generation for legacy and universal Grafana actions.
-- Preflight policy failures and confirmation handling.
-- Executor dispatch for both legacy and `grafana.request` actions.
+### Datasources
 
-## Remaining gaps
+- `POST /api/datasources` → ✅ `grafana.datasource.upsert`
+- `DELETE /api/datasources/uid/:uid` → ✅ `grafana.datasource.delete`
+- `GET /api/datasources/uid/:uid/health` → ✅ `grafana.datasource.health-check`
+- `POST /api/ds/query` → ✅ `grafana.datasource.query`
+- Other datasource endpoints (`/resources/*`, `/name/*`) → 🟨 universal fallback
 
-- Domain-specific typed Grafana models (folders/dashboards/alerting/datasources/teams/service accounts) are still optional enhancements.
-- Universal request coverage is complete at transport/control-plane level; typed semantic reconciliation can be added incrementally on top.
+### Teams
+
+- `POST /api/teams` → ✅ `grafana.team.upsert`
+- `DELETE /api/teams/:id` → ✅ `grafana.team.delete`
+- `PUT|POST /api/teams/:id/members` → ✅ `grafana.team-membership.sync`
+- Additional team APIs (`/search`, member delete by userId, etc.) → 🟨 universal fallback
+
+### Service accounts
+
+- `POST /api/serviceaccounts` → ✅ `grafana.service-account.upsert`
+- `DELETE /api/serviceaccounts/:id` → ✅ `grafana.service-account.delete`
+- `POST /api/serviceaccounts/:id/tokens` → ✅ `grafana.service-account-token.create`
+- `DELETE /api/serviceaccounts/:id/tokens/:tokenId` → ✅ `grafana.service-account-token.delete`
+- `GET /api/serviceaccounts/:id/tokens` → ✅ `grafana.service-account-token.list`
+
+### Universal / cross-domain
+
+- Any allowlisted path under `/api` or `/apis` (including raw methods) → ✅ `grafana.request`
+- Legacy CRUD aliases (`create/read/update/delete`) → ✅ mapped to HTTP methods
+- `/admin/provisioning` and `/admin/settings` segments → ⛔ blocked
+
+## Safety controls enforced
+
+- Prefix allowlist: `/api`, `/apis`
+- Deny segments: `/admin/provisioning`, `/admin/settings`
+- High-risk write confirmation: `confirm: I_UNDERSTAND` (payload/body)
+- Policy enforcement in both preflight and runtime provider execution
+
+## Validation run
+
+- `pnpm --filter @naas/shared build`
+- `pnpm --filter @naas/cli build`
+- `pnpm --filter @naas/cli test`
+
+All commands pass after Wave 3 (`81` tests passing in CLI suite).

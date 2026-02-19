@@ -573,6 +573,54 @@ Safety notes:
 - Team membership `mode: replace` requires `confirm: I_UNDERSTAND`.
 - Typed delete operations require their target identifiers (`uid`, `id`, `tokenId`) in desired spec.
 
+### 1.4.4 Grafana typed read/check/query/list operations
+
+Additional typed read/verification blocks:
+
+- `grafanaFolderReads`
+- `grafanaDashboardReads`
+- `grafanaAlertRuleGroupReads`
+- `grafanaContactPointReads`
+- `grafanaNotificationPolicyRead`
+- `grafanaDatasourceHealthChecks`
+- `grafanaDatasourceQueries`
+- `grafanaServiceAccountTokenLists`
+
+Example:
+
+```yaml
+grafanaFolderReads:
+  - uid: ops
+
+grafanaDashboardReads:
+  - uid: ops-overview
+
+grafanaAlertRuleGroupReads:
+  - folderUid: ops
+    group: infra-alerts
+
+grafanaContactPointReads:
+  - uid: cp-email
+
+grafanaNotificationPolicyRead: true
+
+grafanaDatasourceHealthChecks:
+  - uid: ds-prom
+
+grafanaDatasourceQueries:
+  - queries:
+      - refId: A
+        datasource:
+          uid: ds-prom
+        expr: up
+
+grafanaServiceAccountTokenLists:
+  - serviceAccountId: 33
+```
+
+Preflight rules:
+- duplicate read/check declarations are rejected for identifiers where uniqueness is expected.
+
 ---
 
 ## 2) Installation

@@ -276,6 +276,50 @@ export function runPreflightChecks(current: UnifiedState, desired: DesiredSpec, 
     }
   }
 
+  const seenFolderReads = new Set<string>();
+  for (const folderRead of desired.grafanaFolderReads ?? []) {
+    if (!folderRead.uid) {
+      continue;
+    }
+    if (seenFolderReads.has(folderRead.uid)) {
+      errors.push(`Duplicate grafanaFolderReads uid ${folderRead.uid}`);
+    }
+    seenFolderReads.add(folderRead.uid);
+  }
+
+  const seenDashboardReads = new Set<string>();
+  for (const dashboardRead of desired.grafanaDashboardReads ?? []) {
+    if (seenDashboardReads.has(dashboardRead.uid)) {
+      errors.push(`Duplicate grafanaDashboardReads uid ${dashboardRead.uid}`);
+    }
+    seenDashboardReads.add(dashboardRead.uid);
+  }
+
+  const seenAlertGroupReads = new Set<string>();
+  for (const alertGroupRead of desired.grafanaAlertRuleGroupReads ?? []) {
+    const key = `${alertGroupRead.folderUid}:${alertGroupRead.group}`;
+    if (seenAlertGroupReads.has(key)) {
+      errors.push(`Duplicate grafanaAlertRuleGroupReads entry ${key}`);
+    }
+    seenAlertGroupReads.add(key);
+  }
+
+  const seenDatasourceHealthChecks = new Set<string>();
+  for (const healthCheck of desired.grafanaDatasourceHealthChecks ?? []) {
+    if (seenDatasourceHealthChecks.has(healthCheck.uid)) {
+      errors.push(`Duplicate grafanaDatasourceHealthChecks uid ${healthCheck.uid}`);
+    }
+    seenDatasourceHealthChecks.add(healthCheck.uid);
+  }
+
+  const seenTokenLists = new Set<number>();
+  for (const tokenList of desired.grafanaServiceAccountTokenLists ?? []) {
+    if (seenTokenLists.has(tokenList.serviceAccountId)) {
+      errors.push(`Duplicate grafanaServiceAccountTokenLists serviceAccountId ${tokenList.serviceAccountId}`);
+    }
+    seenTokenLists.add(tokenList.serviceAccountId);
+  }
+
   for (const dns of desired.proxmoxNodeDns ?? []) {
     if (!nodeNames.has(dns.node)) {
       warnings.push(`Node DNS config targets unknown node ${dns.node} (not found in current scan)`);

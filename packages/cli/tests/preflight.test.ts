@@ -239,6 +239,30 @@ describe('runPreflightChecks', () => {
     expect(report.errors.some((error) => error.includes('Duplicate grafanaServiceAccountTokens entry'))).toBe(true);
   });
 
+  it('returns Wave 3 typed grafana duplicate errors for read and check declarations', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      grafanaFolderReads: [{ uid: 'ops' }, { uid: 'ops' }],
+      grafanaDashboardReads: [{ uid: 'dash-ops' }, { uid: 'dash-ops' }],
+      grafanaAlertRuleGroupReads: [
+        { folderUid: 'ops', group: 'alerts' },
+        { folderUid: 'ops', group: 'alerts' }
+      ],
+      grafanaDatasourceHealthChecks: [{ uid: 'ds-prom' }, { uid: 'ds-prom' }],
+      grafanaServiceAccountTokenLists: [{ serviceAccountId: 33 }, { serviceAccountId: 33 }]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaFolderReads uid'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaDashboardReads uid'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaAlertRuleGroupReads entry'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaDatasourceHealthChecks uid'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('Duplicate grafanaServiceAccountTokenLists serviceAccountId'))).toBe(true);
+  });
+
   it('returns error when high-risk generic CRUD misses explicit confirmation', () => {
     const current = baseState();
     const desired: DesiredSpec = {

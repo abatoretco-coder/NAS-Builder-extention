@@ -30,6 +30,15 @@ Implemented baseline (CLI + shared):
   - `DesiredSpec.grafanaTeamMemberships[]`
   - `DesiredSpec.grafanaServiceAccounts[]`
   - `DesiredSpec.grafanaServiceAccountTokens[]`
+- Typed read/verification lifecycle:
+  - `DesiredSpec.grafanaFolderReads[]`
+  - `DesiredSpec.grafanaDashboardReads[]`
+  - `DesiredSpec.grafanaAlertRuleGroupReads[]`
+  - `DesiredSpec.grafanaContactPointReads[]`
+  - `DesiredSpec.grafanaNotificationPolicyRead`
+  - `DesiredSpec.grafanaDatasourceHealthChecks[]`
+  - `DesiredSpec.grafanaDatasourceQueries[]`
+  - `DesiredSpec.grafanaServiceAccountTokenLists[]`
 
 See also:
 - `docs/API-DOCUMENTATION-SNAPSHOT.md`
@@ -37,7 +46,7 @@ See also:
 
 Remaining phases below still apply for typed domain-specific management (folders, dashboards, alerting, datasources, teams, service accounts).
 
-Note: Phase B is implemented and Phases C-E are now partially implemented via typed desired-spec + planner/preflight/executor/provider wiring on top of the universal API layer.
+Note: Phase B is implemented and Phases C-E now include typed write + read/check foundations via desired-spec + planner/preflight/executor/provider wiring on top of the universal API layer.
 
 ## New mandatory instructions (before any next Grafana phase)
 

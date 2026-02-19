@@ -1041,6 +1041,73 @@ function planAppActions(desired: DesiredSpec): PlanAction[] {
     });
   }
 
+  for (const folderRead of desired.grafanaFolderReads ?? []) {
+    actions.push({
+      kind: 'grafana.folder.read',
+      config: folderRead,
+      reason: folderRead.uid
+        ? `Read Grafana folder ${folderRead.uid}`
+        : 'Read Grafana folders list'
+    });
+  }
+
+  for (const dashboardRead of desired.grafanaDashboardReads ?? []) {
+    actions.push({
+      kind: 'grafana.dashboard.read',
+      config: dashboardRead,
+      reason: `Read Grafana dashboard ${dashboardRead.uid}`
+    });
+  }
+
+  for (const alertRuleGroupRead of desired.grafanaAlertRuleGroupReads ?? []) {
+    actions.push({
+      kind: 'grafana.alert-rule-group.read',
+      config: alertRuleGroupRead,
+      reason: `Read Grafana alert rule group ${alertRuleGroupRead.folderUid}/${alertRuleGroupRead.group}`
+    });
+  }
+
+  for (const contactPointRead of desired.grafanaContactPointReads ?? []) {
+    actions.push({
+      kind: 'grafana.contact-point.read',
+      config: contactPointRead,
+      reason: contactPointRead.uid
+        ? `Read Grafana contact point ${contactPointRead.uid}`
+        : 'Read Grafana contact points list'
+    });
+  }
+
+  if (desired.grafanaNotificationPolicyRead) {
+    actions.push({
+      kind: 'grafana.notification-policy.read',
+      reason: 'Read Grafana notification policy tree'
+    });
+  }
+
+  for (const datasourceHealth of desired.grafanaDatasourceHealthChecks ?? []) {
+    actions.push({
+      kind: 'grafana.datasource.health-check',
+      config: datasourceHealth,
+      reason: `Run Grafana datasource health-check for ${datasourceHealth.uid}`
+    });
+  }
+
+  for (const datasourceQuery of desired.grafanaDatasourceQueries ?? []) {
+    actions.push({
+      kind: 'grafana.datasource.query',
+      config: datasourceQuery,
+      reason: 'Run Grafana datasource query'
+    });
+  }
+
+  for (const tokenList of desired.grafanaServiceAccountTokenLists ?? []) {
+    actions.push({
+      kind: 'grafana.service-account-token.list',
+      config: tokenList,
+      reason: `List Grafana service account tokens for ${tokenList.serviceAccountId}`
+    });
+  }
+
   for (const operation of desired.grafanaCrud ?? []) {
     const isLegacyCrudMethod =
       operation.method === 'create' ||
