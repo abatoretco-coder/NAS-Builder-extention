@@ -5,6 +5,7 @@ import { runScan } from './commands/scan.js';
 import { runPlan } from './commands/plan.js';
 import { runApply } from './commands/apply.js';
 import { runValidate } from './commands/validate.js';
+import { runInitArch } from './commands/initArch.js';
 import { ConfigError } from './utils/errors.js';
 
 interface CommonCliOptions {
@@ -41,6 +42,33 @@ program
     const result = await runPlan(profile);
     renderOutput(result, options);
   });
+
+program
+  .command('init-arch')
+  .option('--profile <name>', 'Profile name')
+  .option('--env <env>', 'Deprecated alias for profile')
+  .option('--admin-ip <ip>', 'Admin LAN host IPv4 address (converted to /32)')
+  .option('--admin-cidr <cidr>', 'Admin LAN host CIDR override (for example 192.0.2.50/32)')
+  .option('--yes', 'Auto-select first detected private IPv4 address', false)
+  .option('--json', 'Print structured JSON output', false)
+  .option('--verbose', 'Print additional details', false)
+  .action(
+    async (
+      options: CommonCliOptions & {
+        adminIp?: string;
+        adminCidr?: string;
+        yes: boolean;
+      }
+    ) => {
+      const profile = resolveProfile(options);
+      const result = await runInitArch(profile, {
+        adminIp: options.adminIp,
+        adminCidr: options.adminCidr,
+        yes: options.yes
+      });
+      renderOutput(result, options);
+    }
+  );
 
 program
   .command('apply')

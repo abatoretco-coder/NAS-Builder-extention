@@ -64,7 +64,7 @@ vmProvision:
         firewall: true
     onboot: true
     protection: true
-    tags: [env=lab, role=edge-gateway, tier=lan, owner=loic]
+    tags: [env-lab, role-edge-gateway, tier-lan, owner-loic]
     description: "Tailscale edge gateway (Phase0: in-guest Tailscale; Phase2: optional subnet router)"
     ostype: l26
     agent: true
@@ -98,7 +98,7 @@ vmProvision:
         firewall: true
     onboot: true
     protection: true
-    tags: [env=lab, role=app-host, tier=lan, owner=loic]
+    tags: [env-lab, role-app-host, tier-lan, owner-loic]
     description: "Docker app host: plex/jarvis/monitoring/kargo-preprod"
     ostype: l26
     agent: true
@@ -132,7 +132,7 @@ vmProvision:
         firewall: true
     onboot: true
     protection: true
-    tags: [env=lab, role=home-assistant, tier=lan, owner=loic]
+    tags: [env-lab, role-home-assistant, tier-lan, owner-loic]
     description: "Home Assistant VM (recommended target OS: HAOS). Tailscale in-guest for phase0 simplicity."
     ostype: l26
     agent: false
@@ -255,24 +255,24 @@ safetyGuards:
   runtimeNetworkChangesAllowed: false
   runtimeBackupChangesAllowed: false
   managementAccessCidrs:
-    - 192.168.1.50/32
+    - ${ADMIN_PC_CIDR:-192.0.2.50/32}
   notes:
-    - Keep LAN admin PC CIDR allowlisted for Proxmox management before enabling firewall runtime changes.
+    - Keep LAN management CIDR allowlisted for Proxmox management before enabling firewall runtime changes.
 
 proxmoxDatacenterFirewallRules:
   - action: ACCEPT
     type: in
-    source: 192.168.1.50/32
+    source: ${ADMIN_PC_CIDR:-192.0.2.50/32}
     proto: tcp
     dport: "22"
-    comment: "Allow LAN admin PC SSH to Proxmox host"
+    comment: "Allow LAN management source SSH to Proxmox host"
     enable: true
   - action: ACCEPT
     type: in
-    source: 192.168.1.50/32
+    source: ${ADMIN_PC_CIDR:-192.0.2.50/32}
     proto: tcp
     dport: "8006"
-    comment: "Allow LAN admin PC Proxmox UI/API"
+    comment: "Allow LAN management source Proxmox UI/API"
     enable: true
 
 backupPolicies:
@@ -407,7 +407,7 @@ profilesConfig:
             firewall: true
         onboot: true
         protection: true
-        tags: [env=lab, role=firewall-router, tier=lan, owner=loic]
+        tags: [env-lab, role-firewall-router, tier-lan, owner-loic]
         description: "OPNsense router/firewall for SERVICES/IOT segmentation"
         agent: false
     reattachments:

@@ -1,0 +1,45 @@
+vms: []
+composeProjects: []
+
+safetyGuards:
+  executionMode: firewall-wave
+  runtimeFirewallChangesAllowed: true
+  runtimeNetworkChangesAllowed: false
+  runtimeBackupChangesAllowed: false
+  managementAccessCidrs:
+    - ${ADMIN_PC_CIDR:-192.0.2.50/32}
+  notes:
+    - Dedicated firewall-only wave to avoid VM config drift/reboots.
+
+proxmoxDatacenterFirewallOptions:
+  options:
+    enable: 1
+    policy_in: DROP
+    policy_out: ACCEPT
+
+proxmoxNodeFirewallOptions:
+  - node: proxmox
+    options:
+      enable: 1
+      confirm: I_UNDERSTAND
+
+proxmoxDatacenterFirewallRules:
+  - action: ACCEPT
+    type: in
+    source: ${ADMIN_PC_CIDR:-192.0.2.50/32}
+    proto: tcp
+    dport: "22"
+    comment: "Allow LAN management SSH"
+    enable: true
+  - action: ACCEPT
+    type: in
+    source: ${ADMIN_PC_CIDR:-192.0.2.50/32}
+    proto: tcp
+    dport: "8006"
+    comment: "Allow LAN management Proxmox UI/API"
+    enable: true
+  - action: ACCEPT
+    type: in
+    source: 100.64.0.0/10
+    comment: "Allow Tailscale overlay"
+    enable: true

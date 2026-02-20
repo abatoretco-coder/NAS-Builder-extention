@@ -4,6 +4,7 @@ import type { EnvironmentName, UnifiedState } from '@naas/shared';
 import { loadRuntimeConfig, resolvePath } from '../config/loadConfig.js';
 import { loadDesiredSpec } from '../state/desired.js';
 import { buildPlan } from '../planner/planner.js';
+import { buildEnrichedPlan } from '../planner/enrichedPlan.js';
 import { runPreflightChecks } from '../planner/preflight.js';
 import { writeJsonFile } from '../utils/fs.js';
 
@@ -12,6 +13,7 @@ export interface PlanCommandResult {
   command: 'plan';
   profile: string;
   outputPath: string;
+  enrichedOutputPath: string;
   actions: number;
   preflight: {
     ok: boolean;
@@ -37,12 +39,15 @@ export async function runPlan(env: EnvironmentName): Promise<PlanCommandResult> 
 
   const outputPath = path.join(runtime.stateDir, 'plan.json');
   await writeJsonFile(outputPath, plan);
+  const enrichedOutputPath = path.join(runtime.stateDir, 'plan.enriched.json');
+  await writeJsonFile(enrichedOutputPath, buildEnrichedPlan(plan));
 
   return {
     ok: true,
     command: 'plan',
     profile: runtime.profile,
     outputPath,
+    enrichedOutputPath,
     actions: plan.actions.length,
     preflight: {
       ok: preflight.ok,

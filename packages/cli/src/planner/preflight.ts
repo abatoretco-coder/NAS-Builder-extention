@@ -1,6 +1,7 @@
 import type { DesiredSpec, Plan, UnifiedState } from '@naas/shared';
 import { evaluateGenericCrudPolicy, type CrudPayload } from '../providers/proxmoxCrudPolicy.js';
 import { evaluateGrafanaCrudPolicy, type GrafanaPayload } from '../providers/grafanaCrudPolicy.js';
+import { isDocumentationCidr } from '../utils/adminCidr.js';
 
 export interface PreflightReport {
   ok: boolean;
@@ -109,6 +110,14 @@ export function runPreflightChecks(current: UnifiedState, desired: DesiredSpec, 
       errors.push(
         'Firewall runtime changes require explicit management allowlist. Set safetyGuards.managementAccessCidrs (for example your LAN admin PC /32).'
       );
+    }
+
+    for (const sourceCidr of managementCidrs) {
+      if (isDocumentationCidr(sourceCidr)) {
+        errors.push(
+          `Invalid management CIDR ${sourceCidr}. Replace documentation placeholder CIDR with your real admin LAN host CIDR (for example via ADMIN_PC_CIDR).`
+        );
+      }
     }
 
     const datacenterRules = desired.proxmoxDatacenterFirewallRules ?? [];

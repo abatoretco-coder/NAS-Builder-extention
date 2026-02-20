@@ -170,7 +170,7 @@ describe('runPreflightChecks', () => {
       composeProjects: [],
       safetyGuards: {
         runtimeFirewallChangesAllowed: true,
-        managementAccessCidrs: ['192.168.1.50/32']
+        managementAccessCidrs: ['10.10.10.50/32']
       },
       proxmoxDatacenterFirewallOptions: {
         options: {
@@ -182,7 +182,7 @@ describe('runPreflightChecks', () => {
       proxmoxDatacenterFirewallRules: [
         {
           action: 'ACCEPT',
-          source: '192.168.1.50/32',
+          source: '10.10.10.50/32',
           proto: 'tcp',
           dport: '22'
         }
@@ -194,14 +194,14 @@ describe('runPreflightChecks', () => {
     expect(report.errors.some((error) => error.includes('tcp/8006'))).toBe(true);
   });
 
-  it('accepts runtime firewall changes when management CIDR and allow rules are present', () => {
+  it('rejects documentation placeholder management CIDRs when firewall runtime changes are enabled', () => {
     const current = baseState();
     const desired: DesiredSpec = {
       vms: [],
       composeProjects: [],
       safetyGuards: {
         runtimeFirewallChangesAllowed: true,
-        managementAccessCidrs: ['192.168.1.50/32']
+        managementAccessCidrs: ['192.0.2.50/32']
       },
       proxmoxDatacenterFirewallOptions: {
         options: {
@@ -213,13 +213,44 @@ describe('runPreflightChecks', () => {
       proxmoxDatacenterFirewallRules: [
         {
           action: 'ACCEPT',
-          source: '192.168.1.50/32',
+          source: '192.0.2.50/32',
+          proto: 'tcp',
+          dport: '22,8006'
+        }
+      ]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('documentation placeholder CIDR'))).toBe(true);
+  });
+
+  it('accepts runtime firewall changes when management CIDR and allow rules are present', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      safetyGuards: {
+        runtimeFirewallChangesAllowed: true,
+        managementAccessCidrs: ['10.10.10.50/32']
+      },
+      proxmoxDatacenterFirewallOptions: {
+        options: {
+          enable: 1,
+          policy_in: 'DROP',
+          policy_out: 'ACCEPT'
+        }
+      },
+      proxmoxDatacenterFirewallRules: [
+        {
+          action: 'ACCEPT',
+          source: '10.10.10.50/32',
           proto: 'tcp',
           dport: '22'
         },
         {
           action: 'ACCEPT',
-          source: '192.168.1.50/32',
+          source: '10.10.10.50/32',
           proto: 'tcp',
           dport: '8006'
         }

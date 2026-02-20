@@ -15,4 +15,4 @@ grafana:
   tokenEnv: GRAFANA_TOKEN
   insecure: true
 
-desiredSpecPath: specs/nas.desired.yaml
+desiredSpecPath: specs/preprod.firewall.desired.yaml
