@@ -10,6 +10,10 @@ Apply these rules for all coding, review, and documentation tasks in this reposi
 - Keep strong typing and explicit error handling.
 - Documentation-first for behavior changes: update docs before or with code.
 
+## Architecture target (Jarvis homelab)
+
+- Keep the target architecture and phased constraints in mind at all times; see `.github/instructions/HomelabArchitecture.instructions.md`.
+
 ## Security and secrets
 
 - Never hardcode credentials, tokens, or secrets in code/tests/docs/logs.
@@ -27,7 +31,7 @@ Apply these rules for all coding, review, and documentation tasks in this reposi
 ## LAN management safety
 
 - Never apply host/datacenter firewall DROP policies without explicit allow rules for the admin LAN management source.
-- Keep admin management source in `safetyGuards.managementAccessCidrs` using CIDR format (example: `192.168.1.50/32`).
+- Keep admin management source in `safetyGuards.managementAccessCidrs` using CIDR format (example: `192.0.2.50/32`).
 - Keep management ports `22` and `8006` explicitly allowed for each admin CIDR before restrictive rules.
 - Use CIDR in firewall `source` fields; do not use `IP:port` format in `source`.
 

@@ -16,6 +16,10 @@ Use these instructions whenever generating code, answering questions, or reviewi
 	- Shared models/types
 - The extension is standalone and must not require code changes in user projects.
 
+## Architecture target (Jarvis homelab)
+
+- Keep the target homelab architecture and phased constraints as the source of truth: `.github/instructions/HomelabArchitecture.instructions.md`.
+
 ## Core engineering principles
 
 1. Prefer small, focused, production-safe changes.
@@ -50,7 +54,7 @@ Use these instructions whenever generating code, answering questions, or reviewi
 ## LAN management safety
 
 - Never apply host/datacenter firewall DROP policies without explicit allow rules for the admin LAN management source.
-- Keep admin management source in `safetyGuards.managementAccessCidrs` using CIDR format (example: `192.168.1.50/32`).
+- Keep admin management source in `safetyGuards.managementAccessCidrs` using CIDR format (example: `192.0.2.50/32`).
 - Keep management ports `22` and `8006` explicitly allowed for each admin CIDR before restrictive rules.
 - Use CIDR in firewall `source` fields; do not use `IP:port` format in `source`.
 

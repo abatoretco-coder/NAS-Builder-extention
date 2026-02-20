@@ -126,3 +126,13 @@ node .\packages\cli\dist\src\index.js plan --profile preprod --json
 node .\packages\cli\dist\src\index.js apply --profile preprod --dry-run --yes --json
 node .\packages\cli\dist\src\index.js validate --profile preprod --json
 ```
+
+## LAN admin CIDR initialization (anti-lockout)
+
+Before enabling Proxmox firewall runtime changes, initialize the admin LAN CIDR variable:
+
+```powershell
+node .\packages\cli\dist\src\index.js init-arch --profile preprod
+```
+
+This command detects private IPv4 addresses, asks/chooses the right one, and writes `ADMIN_PC_CIDR=<your-ip>/32` into `.env`.
