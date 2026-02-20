@@ -780,9 +780,19 @@ export interface ProxmoxNodeCrudConfig {
   reason?: string;
 }
 
+export interface SafetyGuardsConfig {
+  executionMode?: string;
+  runtimeFirewallChangesAllowed?: boolean;
+  runtimeNetworkChangesAllowed?: boolean;
+  runtimeBackupChangesAllowed?: boolean;
+  managementAccessCidrs?: string[];
+  notes?: string[];
+}
+
 export interface DesiredSpec {
   vms: DesiredVmState[];
   composeProjects: DesiredComposeProject[];
+  safetyGuards?: SafetyGuardsConfig;
   grafanaCrud?: GrafanaCrudConfig[];
   grafanaFolders?: GrafanaFolderConfig[];
   grafanaDashboards?: GrafanaDashboardConfig[];

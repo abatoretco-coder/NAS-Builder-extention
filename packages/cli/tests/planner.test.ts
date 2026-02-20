@@ -651,6 +651,33 @@ describe('buildPlan', () => {
     expect(plan.actions.some((action) => action.kind === 'proxmox.datacenter-firewall-rule.upsert')).toBe(true);
   });
 
+  it('moves firewall mutation actions to the end of the plan for safer rollout', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      vmProvision: [
+        {
+          name: 'new-vm-safe-order',
+          vmid: 909,
+          node: 'node1',
+          cpu: { cores: 2 },
+          memory: { size: 2048 },
+          disks: [{ interface: 'scsi', index: 0, storage: 'local-lvm', size: '20G' }],
+          networks: [{ interface: 'net', index: 0, model: 'virtio', bridge: 'vmbr0' }]
+        }
+      ],
+      proxmoxDatacenterFirewallRules: [{ action: 'DROP', type: 'in', pos: 999 }]
+    };
+
+    const plan = buildPlan(current, desired);
+    const vmCreateIndex = plan.actions.findIndex((action) => action.kind === 'proxmox.vm.create');
+    const firewallIndex = plan.actions.findIndex((action) => action.kind === 'proxmox.datacenter-firewall-rule.upsert');
+
+    expect(vmCreateIndex).toBeGreaterThanOrEqual(0);
+    expect(firewallIndex).toBeGreaterThan(vmCreateIndex);
+  });
+
   it('adds Wave 5 VM/CT advanced lifecycle actions', () => {
     const current = baseState();
     const desired: DesiredSpec = {

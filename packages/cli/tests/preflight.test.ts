@@ -122,6 +122,182 @@ describe('runPreflightChecks', () => {
     expect(report.errors.some((error) => error.includes('proxmoxDatacenterCrud'))).toBe(true);
   });
 
+  it('blocks proxmox firewall runtime changes unless explicitly enabled in safetyGuards', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      proxmoxDatacenterFirewallOptions: {
+        options: {
+          enable: 1,
+          policy_in: 'DROP',
+          policy_out: 'ACCEPT'
+        }
+      }
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('runtimeFirewallChangesAllowed'))).toBe(true);
+  });
+
+  it('requires managementAccessCidrs when runtime firewall changes are enabled', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      safetyGuards: {
+        runtimeFirewallChangesAllowed: true
+      },
+      proxmoxDatacenterFirewallOptions: {
+        options: {
+          enable: 1,
+          policy_in: 'DROP',
+          policy_out: 'ACCEPT'
+        }
+      }
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('managementAccessCidrs'))).toBe(true);
+  });
+
+  it('requires explicit allow rules for management ports when runtime firewall changes are enabled', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      safetyGuards: {
+        runtimeFirewallChangesAllowed: true,
+        managementAccessCidrs: ['192.168.1.50/32']
+      },
+      proxmoxDatacenterFirewallOptions: {
+        options: {
+          enable: 1,
+          policy_in: 'DROP',
+          policy_out: 'ACCEPT'
+        }
+      },
+      proxmoxDatacenterFirewallRules: [
+        {
+          action: 'ACCEPT',
+          source: '192.168.1.50/32',
+          proto: 'tcp',
+          dport: '22'
+        }
+      ]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('tcp/8006'))).toBe(true);
+  });
+
+  it('accepts runtime firewall changes when management CIDR and allow rules are present', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      safetyGuards: {
+        runtimeFirewallChangesAllowed: true,
+        managementAccessCidrs: ['192.168.1.50/32']
+      },
+      proxmoxDatacenterFirewallOptions: {
+        options: {
+          enable: 1,
+          policy_in: 'DROP',
+          policy_out: 'ACCEPT'
+        }
+      },
+      proxmoxDatacenterFirewallRules: [
+        {
+          action: 'ACCEPT',
+          source: '192.168.1.50/32',
+          proto: 'tcp',
+          dport: '22'
+        },
+        {
+          action: 'ACCEPT',
+          source: '192.168.1.50/32',
+          proto: 'tcp',
+          dport: '8006'
+        }
+      ]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(true);
+  });
+
+  it('blocks runtime network changes unless explicitly enabled in safetyGuards', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      networks: [{ name: 'vmbr42', node: 'node1', type: 'bridge' }]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('runtimeNetworkChangesAllowed'))).toBe(true);
+  });
+
+  it('blocks runtime backup changes unless explicitly enabled in safetyGuards', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      proxmoxBackupJobs: [
+        {
+          id: 'bkp-1',
+          schedule: 'daily',
+          storage: 'local'
+        }
+      ]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('runtimeBackupChangesAllowed'))).toBe(true);
+  });
+
+  it('rejects snapshot declarations for VM/CT provisioned in same run', () => {
+    const current = baseState();
+    const desired: DesiredSpec = {
+      vms: [],
+      composeProjects: [],
+      vmProvision: [
+        {
+          name: 'vm-new',
+          vmid: 900,
+          node: 'node1',
+          cpu: { cores: 2 },
+          memory: { size: 2048 },
+          disks: [{ interface: 'scsi', index: 0, storage: 'local-lvm', size: '20G' }],
+          networks: [{ interface: 'net', index: 0, model: 'virtio', bridge: 'vmbr0' }]
+        }
+      ],
+      containerProvision: [
+        {
+          name: 'ct-new',
+          vmid: 901,
+          node: 'node1',
+          ostemplate: 'local:vztmpl/debian-12-standard.tar.zst',
+          rootfs: { storage: 'local-lvm', size: '8G' },
+          networks: [{ index: 0, bridge: 'vmbr0' }]
+        }
+      ],
+      proxmoxVmSnapshots: [{ node: 'node1', vmid: 900, name: 'pre-risky' }],
+      proxmoxCtSnapshots: [{ node: 'node1', vmid: 901, name: 'pre-risky' }]
+    };
+
+    const report = runPreflightChecks(current, desired);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((error) => error.includes('proxmoxVmSnapshots'))).toBe(true);
+    expect(report.errors.some((error) => error.includes('proxmoxCtSnapshots'))).toBe(true);
+  });
+
   it('returns error for invalid grafanaCrud path outside allowlist', () => {
     const current = baseState();
     const desired: DesiredSpec = {

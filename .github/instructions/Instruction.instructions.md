@@ -47,6 +47,13 @@ Use these instructions whenever generating code, answering questions, or reviewi
 - Require explicit confirmation payload (`confirm: I_UNDERSTAND`) for high-risk write operations.
 - Enforce the same policy in both runtime provider execution and preflight checks.
 
+## LAN management safety
+
+- Never apply host/datacenter firewall DROP policies without explicit allow rules for the admin LAN management source.
+- Keep admin management source in `safetyGuards.managementAccessCidrs` using CIDR format (example: `192.168.1.50/32`).
+- Keep management ports `22` and `8006` explicitly allowed for each admin CIDR before restrictive rules.
+- Use CIDR in firewall `source` fields; do not use `IP:port` format in `source`.
+
 ## Grafana universal API safety
 
 - Treat Grafana API management as policy-controlled by default.

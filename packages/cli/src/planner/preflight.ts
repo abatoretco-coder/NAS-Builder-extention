@@ -8,9 +8,173 @@ export interface PreflightReport {
   warnings: string[];
 }
 
+const REQUIRED_MANAGEMENT_PORTS = [22, 8006] as const;
+
+function parsePortRangeToken(token: string): { start: number; end: number } | undefined {
+  const normalized = token.trim();
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (normalized.includes(':')) {
+    const [startRaw, endRaw] = normalized.split(':', 2);
+    const start = Number(startRaw);
+    const end = Number(endRaw);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) {
+      return undefined;
+    }
+    return {
+      start: Math.min(start, end),
+      end: Math.max(start, end)
+    };
+  }
+
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) {
+    return undefined;
+  }
+  return { start: value, end: value };
+}
+
+function ruleCoversPort(dport: string | undefined, port: number): boolean {
+  if (!dport || !dport.trim()) {
+    return true;
+  }
+
+  const tokens = dport.split(',');
+  for (const token of tokens) {
+    const range = parsePortRangeToken(token);
+    if (!range) {
+      continue;
+    }
+    if (port >= range.start && port <= range.end) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isAcceptRuleForManagement(
+  rule: NonNullable<DesiredSpec['proxmoxDatacenterFirewallRules']>[number],
+  sourceCidr: string,
+  requiredPort: number
+): boolean {
+  const action = String(rule.action ?? '')
+    .trim()
+    .toUpperCase();
+  if (action !== 'ACCEPT') {
+    return false;
+  }
+
+  if (rule.enable === false || String(rule.ensure ?? 'present').toLowerCase() === 'absent') {
+    return false;
+  }
+
+  if (String(rule.source ?? '').trim() !== sourceCidr) {
+    return false;
+  }
+
+  const proto = String(rule.proto ?? 'tcp')
+    .trim()
+    .toLowerCase();
+  if (proto !== 'tcp' && proto !== 'all') {
+    return false;
+  }
+
+  return ruleCoversPort(rule.dport, requiredPort);
+}
+
 export function runPreflightChecks(current: UnifiedState, desired: DesiredSpec, plan?: Plan): PreflightReport {
   const errors: string[] = [];
   const warnings: string[] = [];
+
+  const firewallActionsRequested =
+    Boolean(desired.proxmoxDatacenterFirewallOptions) ||
+    (desired.proxmoxNodeFirewallOptions?.length ?? 0) > 0 ||
+    (desired.proxmoxDatacenterFirewallAliases?.length ?? 0) > 0 ||
+    (desired.proxmoxDatacenterFirewallIpsets?.length ?? 0) > 0 ||
+    (desired.proxmoxDatacenterFirewallRules?.length ?? 0) > 0 ||
+    (desired.proxmoxNodeFirewallRules?.length ?? 0) > 0;
+
+  if (firewallActionsRequested && desired.safetyGuards?.runtimeFirewallChangesAllowed !== true) {
+    errors.push(
+      'Runtime firewall changes are blocked by default. Set safetyGuards.runtimeFirewallChangesAllowed=true to allow proxmox firewall operations.'
+    );
+  }
+
+  if (firewallActionsRequested && desired.safetyGuards?.runtimeFirewallChangesAllowed === true) {
+    const managementCidrs = desired.safetyGuards.managementAccessCidrs ?? [];
+    if (managementCidrs.length === 0) {
+      errors.push(
+        'Firewall runtime changes require explicit management allowlist. Set safetyGuards.managementAccessCidrs (for example your LAN admin PC /32).'
+      );
+    }
+
+    const datacenterRules = desired.proxmoxDatacenterFirewallRules ?? [];
+    for (const sourceCidr of managementCidrs) {
+      for (const requiredPort of REQUIRED_MANAGEMENT_PORTS) {
+        const hasManagementAllowRule = datacenterRules.some((rule) =>
+          isAcceptRuleForManagement(rule, sourceCidr, requiredPort)
+        );
+
+        if (!hasManagementAllowRule) {
+          errors.push(
+            `Missing Proxmox management allow rule for ${sourceCidr} tcp/${requiredPort} in proxmoxDatacenterFirewallRules.`
+          );
+        }
+      }
+    }
+  }
+
+  const networkActionsRequested =
+    (desired.networks?.length ?? 0) > 0 ||
+    (desired.proxmoxNodeDns?.length ?? 0) > 0 ||
+    (desired.proxmoxNodeHosts?.length ?? 0) > 0 ||
+    (desired.proxmoxNodeOptions?.length ?? 0) > 0 ||
+    (desired.proxmoxNodeTime?.length ?? 0) > 0 ||
+    (desired.proxmoxNodeCrud ?? []).some((operation) => {
+      if (operation.method === 'read') {
+        return false;
+      }
+      const normalizedPath = operation.path.startsWith('/') ? operation.path : `/${operation.path}`;
+      return (
+        normalizedPath === '/network' ||
+        normalizedPath.startsWith('/network/') ||
+        normalizedPath === '/dns' ||
+        normalizedPath.startsWith('/dns/') ||
+        normalizedPath === '/hosts' ||
+        normalizedPath.startsWith('/hosts/') ||
+        normalizedPath === '/config' ||
+        normalizedPath.startsWith('/config/') ||
+        normalizedPath === '/time' ||
+        normalizedPath.startsWith('/time/')
+      );
+    });
+
+  if (networkActionsRequested && desired.safetyGuards?.runtimeNetworkChangesAllowed !== true) {
+    errors.push(
+      'Runtime network changes are blocked by default. Set safetyGuards.runtimeNetworkChangesAllowed=true to allow host/network mutation operations.'
+    );
+  }
+
+  const backupActionsRequested =
+    (desired.proxmoxBackupJobs?.length ?? 0) > 0 ||
+    (desired.proxmoxVmBackups?.length ?? 0) > 0 ||
+    (desired.proxmoxCtBackups?.length ?? 0) > 0 ||
+    (desired.proxmoxDatacenterCrud ?? []).some((operation) => {
+      if (operation.method === 'read') {
+        return false;
+      }
+      const normalizedPath = operation.path.startsWith('/') ? operation.path : `/${operation.path}`;
+      return normalizedPath === '/cluster/backup' || normalizedPath.startsWith('/cluster/backup/');
+    });
+
+  if (backupActionsRequested && desired.safetyGuards?.runtimeBackupChangesAllowed !== true) {
+    errors.push(
+      'Runtime backup changes are blocked by default. Set safetyGuards.runtimeBackupChangesAllowed=true to allow backup job and backup execution operations.'
+    );
+  }
 
   const nodeNames = new Set(current.compute.nodes.map((node) => node.name));
   const existingVmIds = new Set(current.compute.vms.map((vm) => vm.vmid));
@@ -111,6 +275,22 @@ export function runPreflightChecks(current: UnifiedState, desired: DesiredSpec, 
     }
     if (!existingCtIds.has(vmid)) {
       warnings.push(`deleteContainers includes VMID ${vmid} which does not exist in current scan`);
+    }
+  }
+
+  for (const snapshot of desired.proxmoxVmSnapshots ?? []) {
+    if (!existingVmIds.has(snapshot.vmid) && vmProvisionIds.has(snapshot.vmid)) {
+      errors.push(
+        `proxmoxVmSnapshots ${snapshot.node}/${snapshot.vmid}/${snapshot.name} targets a VM provisioned in the same run; split snapshot into a second apply wave`
+      );
+    }
+  }
+
+  for (const snapshot of desired.proxmoxCtSnapshots ?? []) {
+    if (!existingCtIds.has(snapshot.vmid) && ctProvisionIds.has(snapshot.vmid)) {
+      errors.push(
+        `proxmoxCtSnapshots ${snapshot.node}/${snapshot.vmid}/${snapshot.name} targets a CT provisioned in the same run; split snapshot into a second apply wave`
+      );
     }
   }
 

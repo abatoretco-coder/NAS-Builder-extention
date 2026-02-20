@@ -876,6 +876,16 @@ export const desiredSpecSchema = z.object({
       })
     )
     .default([]),
+  safetyGuards: z
+    .object({
+      executionMode: z.string().optional(),
+      runtimeFirewallChangesAllowed: z.boolean().optional(),
+      runtimeNetworkChangesAllowed: z.boolean().optional(),
+      runtimeBackupChangesAllowed: z.boolean().optional(),
+      managementAccessCidrs: z.array(z.string().min(1)).optional(),
+      notes: z.array(z.string().min(1)).optional()
+    })
+    .optional(),
   grafanaCrud: z.array(grafanaCrudSchema).optional(),
   grafanaFolders: z.array(grafanaFolderSchema).optional(),
   grafanaDashboards: z.array(grafanaDashboardSchema).optional(),

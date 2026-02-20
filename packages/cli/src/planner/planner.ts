@@ -30,7 +30,7 @@ export function buildPlan(current: UnifiedState, desired: DesiredSpec): Plan {
   const appActions = planAppActions(desired);
   const validationActions = planValidationActions(desired);
 
-  const actions: PlanAction[] = [
+  const stagedActions: PlanAction[] = [
     ...iam.access,
     ...networks.infra,
     ...storage.infra,
@@ -49,11 +49,46 @@ export function buildPlan(current: UnifiedState, desired: DesiredSpec): Plan {
     ...validationActions
   ];
 
+  const actions = moveFirewallActionsToEnd(stagedActions);
+
   return {
     generatedAt: new Date().toISOString(),
     env: current.env,
     actions
   };
+}
+
+function moveFirewallActionsToEnd(actions: PlanAction[]): PlanAction[] {
+  const regular: PlanAction[] = [];
+  const firewall: PlanAction[] = [];
+
+  for (const action of actions) {
+    if (isFirewallMutationAction(action.kind)) {
+      firewall.push(action);
+      continue;
+    }
+    regular.push(action);
+  }
+
+  return [...regular, ...firewall];
+}
+
+function isFirewallMutationAction(kind: PlanAction['kind']): boolean {
+  switch (kind) {
+    case 'proxmox.datacenter-firewall-options.update':
+    case 'proxmox.node-firewall-options.update':
+    case 'proxmox.datacenter-firewall-alias.update':
+    case 'proxmox.datacenter-firewall-alias.delete':
+    case 'proxmox.datacenter-firewall-ipset.update':
+    case 'proxmox.datacenter-firewall-ipset.delete':
+    case 'proxmox.datacenter-firewall-rule.upsert':
+    case 'proxmox.datacenter-firewall-rule.delete':
+    case 'proxmox.node-firewall-rule.upsert':
+    case 'proxmox.node-firewall-rule.delete':
+      return true;
+    default:
+      return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

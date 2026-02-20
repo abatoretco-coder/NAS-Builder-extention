@@ -1,10 +1,15 @@
-# Jarvis Full Homelab desired spec
-# Scope: Phase 0 active now (SSD-only), with Phase 1/2 profile blocks for later activation.
-# Safety baseline: no public inbound exposure, Tailscale-only remote access.
+# Jarvis Full Homelab desired spec (REFERENCE)
+# Scope: full target architecture blueprint.
+# WARNING:
+# - Do not execute this file directly during incident recovery.
+# - Use specs/nas.desired.yaml for safe bootstrap execution profile.
+# - Firewall changes must be applied only after validated console/remote access path.
 
 profiles:
-  active: phase0
+  active: phase0-full-reference
   available:
+    - phase0-safe-bootstrap
+    - phase0-full-reference
     - phase0
     - phase1
     - phase2
@@ -134,78 +139,6 @@ vmProvision:
     boot:
       order: [scsi0, net0]
 
-networks:
-  - name: vmbr0
-    node: proxmox
-    type: bridge
-    autostart: true
-    comments: "LAN bridge with physical uplink"
-
-proxmoxDatacenterFirewallOptions:
-  options:
-    enable: 1
-    policy_in: DROP
-    policy_out: ACCEPT
-
-proxmoxNodeFirewallOptions:
-  - node: proxmox
-    options:
-      enable: 1
-      policy_in: DROP
-      policy_out: ACCEPT
-
-proxmoxDatacenterFirewallAliases:
-  - name: lan-net
-    cidr: 192.168.1.0/24
-    comment: LAN subnet
-  - name: tailscale-net
-    cidr: 100.64.0.0/10
-    comment: Tailscale CGNAT range
-
-proxmoxDatacenterFirewallRules:
-  - action: ACCEPT
-    type: in
-    source: 192.168.1.0/24
-    comment: Allow LAN baseline in
-    enable: true
-    pos: 0
-  - action: ACCEPT
-    type: in
-    source: 100.64.0.0/10
-    comment: Allow Tailscale baseline in
-    enable: true
-    pos: 1
-  - action: DROP
-    type: in
-    comment: Default drop inbound
-    enable: true
-    pos: 999
-
-# Placeholder backup policy on SSD (warns about SSD capacity pressure until phase1)
-proxmoxBackupJobs:
-  - id: phase0-local-ssd-backup
-    enabled: true
-    node: proxmox
-    storage: local
-    schedule: "02:30"
-    mode: snapshot
-    comment: "Phase0 temporary backup to SSD (move to tank/backups in phase1)"
-    options:
-      compress: zstd
-      prune-backups: "keep-last=3"
-
-# Ensure snapshots exist for risky lifecycle actions
-proxmoxVmSnapshots:
-  - node: proxmox
-    vmid: 100
-    name: pre-risky-phase0-edge-gateway
-  - node: proxmox
-    vmid: 300
-    name: pre-risky-phase0-app-host
-  - node: proxmox
-    vmid: 400
-    name: pre-risky-phase0-home-assistant
-
 composeProjects:
   - path: /opt/naas/stacks/plex
     ensure: running
@@ -315,6 +248,32 @@ firewallPolicies:
         - source: tailscale
           proto: tcp
           ports: [22, 8123]
+
+safetyGuards:
+  executionMode: full-reference
+  runtimeFirewallChangesAllowed: false
+  runtimeNetworkChangesAllowed: false
+  runtimeBackupChangesAllowed: false
+  managementAccessCidrs:
+    - 192.168.1.50/32
+  notes:
+    - Keep LAN admin PC CIDR allowlisted for Proxmox management before enabling firewall runtime changes.
+
+proxmoxDatacenterFirewallRules:
+  - action: ACCEPT
+    type: in
+    source: 192.168.1.50/32
+    proto: tcp
+    dport: "22"
+    comment: "Allow LAN admin PC SSH to Proxmox host"
+    enable: true
+  - action: ACCEPT
+    type: in
+    source: 192.168.1.50/32
+    proto: tcp
+    dport: "8006"
+    comment: "Allow LAN admin PC Proxmox UI/API"
+    enable: true
 
 backupPolicies:
   phase0:

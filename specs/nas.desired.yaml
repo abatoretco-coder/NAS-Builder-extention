@@ -1,11 +1,15 @@
-# Jarvis Full Homelab desired spec
-# Scope: Phase 0 active now (SSD-only), with Phase 1/2 profile blocks for later activation.
-# Safety baseline: no public inbound exposure, Tailscale-only remote access.
+# Jarvis Homelab SAFE bootstrap spec (execution profile)
+# Purpose: keep apply impact minimal while recovering infrastructure access.
+# IMPORTANT:
+# - This file intentionally avoids firewall/network/backup runtime actions.
+# - Full architecture intent remains documented below in metadata blocks.
+# - Use this file for controlled bootstrap only.
 
 profiles:
-  active: phase0
+  active: phase0-safe-bootstrap
   available:
-    - phase0
+    - phase0-safe-bootstrap
+    - phase0-full-reference
     - phase1
     - phase2
 
@@ -20,7 +24,7 @@ assumptions:
     - VM-level firewall allowlists are defined in firewallPolicies and should be enforced through PVE VM firewall rules and/or in-guest firewall bootstrap scripts.
 
 # -----------------------------------------------------------------------------
-# PHASE 0 (ACTIVE): SSD-only MVP
+# PHASE 0 SAFE BOOTSTRAP (ACTIVE): only VM state/provisioning
 # -----------------------------------------------------------------------------
 
 vms:
@@ -134,90 +138,10 @@ vmProvision:
     boot:
       order: [scsi0, net0]
 
-networks:
-  - name: vmbr0
-    node: proxmox
-    type: bridge
-    autostart: true
-    comments: "LAN bridge with physical uplink"
-
-proxmoxDatacenterFirewallOptions:
-  options:
-    enable: 1
-    policy_in: DROP
-    policy_out: ACCEPT
-
-proxmoxNodeFirewallOptions:
-  - node: proxmox
-    options:
-      enable: 1
-      policy_in: DROP
-      policy_out: ACCEPT
-
-proxmoxDatacenterFirewallAliases:
-  - name: lan-net
-    cidr: 192.168.1.0/24
-    comment: LAN subnet
-  - name: tailscale-net
-    cidr: 100.64.0.0/10
-    comment: Tailscale CGNAT range
-
-proxmoxDatacenterFirewallRules:
-  - action: ACCEPT
-    type: in
-    source: 192.168.1.0/24
-    comment: Allow LAN baseline in
-    enable: true
-    pos: 0
-  - action: ACCEPT
-    type: in
-    source: 100.64.0.0/10
-    comment: Allow Tailscale baseline in
-    enable: true
-    pos: 1
-  - action: DROP
-    type: in
-    comment: Default drop inbound
-    enable: true
-    pos: 999
-
-# Placeholder backup policy on SSD (warns about SSD capacity pressure until phase1)
-proxmoxBackupJobs:
-  - id: phase0-local-ssd-backup
-    enabled: true
-    node: proxmox
-    storage: local
-    schedule: "02:30"
-    mode: snapshot
-    comment: "Phase0 temporary backup to SSD (move to tank/backups in phase1)"
-    options:
-      compress: zstd
-      prune-backups: "keep-last=3"
-
-# Ensure snapshots exist for risky lifecycle actions
-proxmoxVmSnapshots:
-  - node: proxmox
-    vmid: 100
-    name: pre-risky-phase0-edge-gateway
-  - node: proxmox
-    vmid: 300
-    name: pre-risky-phase0-app-host
-  - node: proxmox
-    vmid: 400
-    name: pre-risky-phase0-home-assistant
-
-composeProjects:
-  - path: /opt/naas/stacks/plex
-    ensure: running
-  - path: /opt/naas/stacks/jarvis
-    ensure: running
-  - path: /opt/naas/stacks/monitoring
-    ensure: running
-  - path: /opt/naas/stacks/kargo-preprod
-    ensure: running
+composeProjects: []
 
 validation:
-  enabled: true
+  enabled: false
 
 # Operational metadata (builder/in-guest orchestration descriptors)
 tailscaleConfig:
@@ -315,6 +239,18 @@ firewallPolicies:
         - source: tailscale
           proto: tcp
           ports: [22, 8123]
+
+safetyGuards:
+  executionMode: bootstrap-safe
+  runtimeFirewallChangesAllowed: false
+  runtimeNetworkChangesAllowed: false
+  runtimeBackupChangesAllowed: false
+  managementAccessCidrs:
+    - 192.168.1.50/32
+  notes:
+    - Keep firewall, network and backup operations manual until remote access is stable.
+    - Keep LAN admin PC CIDR allowlisted before any firewall DROP policy is applied.
+    - Re-enable compose deployment only after Proxmox access is confirmed healthy.
 
 backupPolicies:
   phase0:
